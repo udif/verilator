@@ -433,16 +433,20 @@ void V3PreProcImp::comment(const string& text) {
 
     if (synth) {
 	if (commentTokenMatch(cmd/*ref*/, "translate_off")) {
-		if (state()==ps_SYNTH_OFF)
-			error("Recursive '// synthesis translate_off' declaration");
-		parsingOff();
-	    statePush(ps_SYNTH_OFF);
+		if (state()==ps_SYNTH_OFF) {
+			v3warn(USERWARN, "Recursive '// synthesis translate_off' declaration");
+		} else {
+			parsingOff();
+			statePush(ps_SYNTH_OFF);
+		}
 	}
 	if (commentTokenMatch(cmd/*ref*/, "translate_on")) {
-		if (state()!=ps_SYNTH_OFF)
-			error("Recursive '// synthesis translate_on' without '// synthesis translate_off' declaration");
-		parsingOn();
-	    statePop();
+		if (state()!=ps_SYNTH_OFF) {
+			v3warn(USERWARN, "Recursive '// synthesis translate_on' without '// synthesis translate_off' declaration");
+		} else {
+			parsingOn();
+	    	statePop();
+		}
 	}
 	if (v3Global.opt.assertOn()) {
 	    // one_hot, one_cold, (full_case, parallel_case)
