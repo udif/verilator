@@ -125,14 +125,14 @@ public:
 		     ps_DEFNAME_UNDEF, ps_DEFNAME_DEFINE,
 		     ps_DEFNAME_IFDEF, ps_DEFNAME_IFNDEF, ps_DEFNAME_ELSIF,
 		     ps_DEFFORM, ps_DEFVALUE, ps_DEFPAREN, ps_DEFARG,
-		     ps_INCNAME, ps_ERRORNAME, ps_JOIN, ps_STRIFY };
+		     ps_INCNAME, ps_ERRORNAME, ps_JOIN, ps_STRIFY, ps_SYNTH_OFF };
     static const char* procStateName(ProcState s) {
 	static const char* states[]
 	    = {"ps_TOP",
 	       "ps_DEFNAME_UNDEF", "ps_DEFNAME_DEFINE",
 	       "ps_DEFNAME_IFDEF", "ps_DEFNAME_IFNDEF", "ps_DEFNAME_ELSIF",
 	       "ps_DEFFORM", "ps_DEFVALUE", "ps_DEFPAREN", "ps_DEFARG",
-	       "ps_INCNAME", "ps_ERRORNAME", "ps_JOIN", "ps_STRIFY"};
+	       "ps_INCNAME", "ps_ERRORNAME", "ps_JOIN", "ps_STRIFY", "ps_SYNTH_OFF"};
 	return states[s];
     };
 
@@ -408,6 +408,9 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0==(strncmp(cp,"ambit synthesis",strlen("ambit synthesis")))) {
 	cp+=strlen("ambit synthesis");
 	synth = true;
+    } else if (0==(strncmp(cp,"synthesis",strlen("synthesis")))) {
+	cp+=strlen("synthesis");
+	synth = true;
     } else {
 	return;
     }
@@ -429,6 +432,18 @@ void V3PreProcImp::comment(const string& text) {
 	cmd.replace(pos, 2, " ");
 
     if (synth) {
+	if (commentTokenMatch(cmd/*ref*/, "translate_off")) {
+		if (state()==ps_SYNTH_OFF)
+			error("Recursive '// synthesis translate_off' declaration");
+		parsingOff();
+	    statePush(ps_SYNTH_OFF);
+	}
+	if (commentTokenMatch(cmd/*ref*/, "translate_on")) {
+		if (state()!=ps_SYNTH_OFF)
+			error("Recursive '// synthesis translate_on' without '// synthesis translate_off' declaration");
+		parsingOn();
+	    statePop();
+	}
 	if (v3Global.opt.assertOn()) {
 	    // one_hot, one_cold, (full_case, parallel_case)
 	    if (commentTokenMatch(cmd/*ref*/, "full_case")) {
@@ -876,7 +891,7 @@ int V3PreProcImp::getStateToken() {
 	if (tok==VP_WHITE && state() !=ps_STRIFY) return (tok);
 	if (tok==VP_BACKQUOTE && state() !=ps_STRIFY) { tok = VP_TEXT; }
 	if (tok==VP_COMMENT) {
-	    if (!m_off) {
+		if (state() == ps_SYNTH_OFF || (!m_off)) {
 		if (m_lexp->m_keepComments == KEEPCMT_SUB) {
 		    string rtn; rtn.assign(yyourtext(),yyourleng());
 		    comment(rtn);
@@ -938,6 +953,9 @@ int V3PreProcImp::getStateToken() {
 	switch (state()) {
 	case ps_TOP: {
 	    break;
+	}
+	case ps_SYNTH_OFF: {
+		goto next_tok;
 	}
 	case ps_DEFNAME_UNDEF:	// FALLTHRU
 	case ps_DEFNAME_DEFINE:	// FALLTHRU
