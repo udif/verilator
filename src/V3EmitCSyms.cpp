@@ -20,19 +20,18 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
-#include <map>
-#include <set>
-#include <vector>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <set>
+#include <vector>
 
 //######################################################################
 // Symbol table emitting
@@ -526,6 +525,7 @@ void EmitCSyms::emitSymImp() {
 	    string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
 	    string funcname = de ? "__Vdeserialize" : "__Vserialize";
 	    string op = de ? ">>" : "<<";
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
 	    puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
 	    puts(   "// LOCAL STATE\n");
 	    // __Vm_namep presumably already correct

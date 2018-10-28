@@ -29,14 +29,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Clean.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Clean state, as a visitor of each AstNode
@@ -99,7 +98,7 @@ private:
 	nodep->user1(clean);
     }
     CleanState getCleanState(AstNode* nodep) {
-	return ((CleanState)nodep->user1());
+        return static_cast<CleanState>(nodep->user1());
     }
     bool isClean(AstNode* nodep) {
 	CleanState clstate = getCleanState(nodep);

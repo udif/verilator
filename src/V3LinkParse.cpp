@@ -24,17 +24,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <set>
-#include <algorithm>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3LinkParse.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <set>
+#include <vector>
 
 //######################################################################
 // Link state, as a visitor of each AstNode

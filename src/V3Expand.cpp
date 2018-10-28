@@ -31,14 +31,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Expand.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Expand state, as a visitor of each AstNode
@@ -349,7 +348,7 @@ private:
 	if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
 	// Remember, Sel's may have non-integer rhs, so need to optimize for that!
-	if (nodep->widthMin()!=(int)nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
+        if (nodep->widthMin() != nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
         if (VN_IS(nodep->backp(), NodeAssign) && nodep==VN_CAST(nodep->backp(), NodeAssign)->lhsp()) {
 	    // Sel is an LHS assignment select
 	} else if (nodep->isWide()) {
@@ -457,7 +456,7 @@ private:
     }
 
     bool expandWide(AstNodeAssign* nodep, AstSel* rhsp) {
-	if (nodep->widthMin()!=(int)rhsp->widthConst()) nodep->v3fatalSrc("Width mismatch");
+        if (nodep->widthMin() != rhsp->widthConst()) nodep->v3fatalSrc("Width mismatch");
         if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_I(rhsp->lsbConst())==0) {
 	    int lsb = rhsp->lsbConst();
 	    UINFO(8,"    Wordize ASSIGN(SEL,align) "<<nodep<<endl);
@@ -528,9 +527,12 @@ private:
 			// else we would just be setting it to the same exact value
                         AstNode* oldvalp = newAstWordSelClone(destp, w);
 			fixCloneLvalue(oldvalp);
-                        if (!ones) oldvalp = new AstAnd(lhsp->fileline(),
-                                                        new AstConst(lhsp->fileline(), maskold.dataWord(w)),
-                                                        oldvalp);
+                        if (!ones) {
+                            oldvalp = new AstAnd(lhsp->fileline(),
+                                                 new AstConst(lhsp->fileline(),
+                                                              maskold.dataWord(w)),
+                                                 oldvalp);
+                        }
 			addWordAssign(nodep, w,
 				      destp,
                                       new AstOr(lhsp->fileline(),
@@ -543,12 +545,16 @@ private:
 		destp->deleteTree(); VL_DANGLING(destp);
 	    } else {
 		UINFO(8,"    ASSIGNSEL(const,narrow) "<<nodep<<endl);
-		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
+                if (destp->isQuad() && !rhsp->isQuad()) {
+                    rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
+                }
 		AstNode* oldvalp = destp->cloneTree(true);
 		fixCloneLvalue(oldvalp);
-                if (!ones) oldvalp = new AstAnd(lhsp->fileline(),
-                                                new AstConst(lhsp->fileline(), maskold),
-                                                oldvalp);
+                if (!ones) {
+                    oldvalp = new AstAnd(lhsp->fileline(),
+                                         new AstConst(lhsp->fileline(), maskold),
+                                         oldvalp);
+                }
 		AstNode* newp
                     = new AstOr(lhsp->fileline(),
                                 oldvalp,
@@ -570,7 +576,7 @@ private:
                                                   destp->cloneTree(true),
                                                   newSelBitWord(lhsp->lsbp(), 0));
 		fixCloneLvalue(oldvalp);
-		if (!ones)
+                if (!ones) {
                     oldvalp = new AstAnd(lhsp->fileline(),
                                          new AstNot(lhsp->fileline(),
                                                     new AstShiftL(lhsp->fileline(),
@@ -581,7 +587,7 @@ private:
                                                                   newSelBitBit(lhsp->lsbp()),
                                                                   VL_WORDSIZE)),
 					  oldvalp);
-
+                }
 		// Restrict the shift amount to 0-31, see bug804.
 		AstNode* shiftp = new AstAnd(nodep->fileline(), lhsp->lsbp()->cloneTree(true),
 					     new AstConst(nodep->fileline(), VL_WORDSIZE-1));
@@ -619,10 +625,10 @@ private:
 		fixCloneLvalue(oldvalp);
 
 		V3Number maskwidth (nodep->fileline(), destp->widthMin());
-		for (int bit=0; bit<(int)lhsp->widthConst(); bit++) maskwidth.setBit(bit,1);
+                for (int bit=0; bit < lhsp->widthConst(); bit++) maskwidth.setBit(bit,1);
 
 		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
-		if (!ones)
+                if (!ones) {
                     oldvalp = new AstAnd(lhsp->fileline(),
                                          new AstNot(lhsp->fileline(),
                                                     new AstShiftL(lhsp->fileline(),
@@ -631,6 +637,7 @@ private:
                                                                   lhsp->lsbp()->cloneTree(true),
                                                                   destp->width())),
 					  oldvalp);
+                }
 		AstNode* newp
                     = new AstOr(lhsp->fileline(),
                                 oldvalp,

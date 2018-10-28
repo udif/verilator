@@ -30,11 +30,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
-#include <unistd.h>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3PartitionGraph.h"
@@ -42,6 +37,10 @@
 #include "V3LifePost.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 // LifePost class functions
@@ -61,7 +60,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         AstVarScope* vscp = nodep->varScopep();
         if (!vscp) nodep->v3fatalSrc("Scope not assigned");
-        if (AstVarScope* newvscp = (AstVarScope*)vscp->user4p()) {
+        if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
             AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
             nodep->replaceWith(newrefp);
@@ -223,7 +222,7 @@ private:
             const std::set<LifeLocation>& dlyVarAssigns = m_writes[dlyVarp];
             // Proof (1)
             const std::set<LifeLocation>& dlyVarReads = m_reads[dlyVarp];
-            if (dlyVarReads.size() > 0) {
+            if (!dlyVarReads.empty()) {
                 continue; // do not scrunch, go to next LifePostLocation
             }
 

@@ -29,10 +29,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Const.h"
@@ -42,6 +38,9 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Graph subclasses
@@ -263,7 +262,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
-	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
+            UINFO(9, "    relinkVar "<<cvtToHex(nodep->varp()->user2p())<<" "<<nodep<<endl);
             AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
 	    if (!newvscp) nodep->v3fatalSrc("not linked");
 	    nodep->varScopep(newvscp);
@@ -768,7 +767,7 @@ private:
 	    string stmt = "return "+rtnvarp->name()+";\n";
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
@@ -790,7 +789,7 @@ private:
         dpip->dpiImport(true);
 	// Add DPI reference to top, since it's a global function
 	m_topScopep->scopep()->addActivep(dpip);
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
@@ -812,7 +811,7 @@ private:
         }
     }
 
-    void makePortList(AstNodeFTask* nodep, AstVar* rtnvarp, AstCFunc* dpip) {
+    void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -859,8 +858,9 @@ private:
                         // At runtime we need the svOpenArrayHandle to point to this task & thread's data,
                         // in addition to static info about the variable
                         string name = portp->name()+"__Vopenarray";
-                        string varCode = ("VerilatedDpiOpenVar "+name
-                                          +" (&"+propName+", &"+portp->name()+");\n");
+                        string varCode = ("VerilatedDpiOpenVar "
+                                          // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                          +name+" (&"+propName+", &"+portp->name()+");\n");
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), varCode));
                         args += "&"+name;
                     }
@@ -963,7 +963,7 @@ private:
             rtnvarp->user2p(rtnvscp);
         }
 
-	string prefix = "";
+        string prefix;
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
 	else if (nodep->dpiExport()) prefix = "__Vdpiexp_";
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
@@ -1292,7 +1292,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
 	    if (portp->isIO()) {
-		tconnects.push_back(make_pair(portp, (AstArg*)NULL));
+                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
 		nameToIndex.insert(make_pair(portp->name(), tpinnum)); // For name based connections
 		tpinnum++;
 		if (portp->attrSFormat()) {
@@ -1330,7 +1330,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 	} else { // By pin number
 	    if (ppinnum >= tpinnum) {
 		if (sformatp) {
-		    tconnects.push_back(make_pair(sformatp, (AstArg*)NULL));
+                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(NULL)));
 		    tconnects[ppinnum].second = argp;
 		    tpinnum++;
 		} else {
@@ -1396,7 +1396,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
     if (debug()>=9) {
 	nodep->dumpTree(cout,"-ftref-out: ");
-	for (int i=0; i<tpinnum; ++i) UINFO(0,"   pin "<<i<<"  conn="<<(void*)tconnects[i].second<<endl);
+        for (int i=0; i<tpinnum; ++i) {
+            UINFO(0,"   pin "<<i<<"  conn="<<cvtToHex(tconnects[i].second)<<endl);
+        }
     }
     return tconnects;
 }

@@ -69,9 +69,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Width.h"
@@ -80,6 +77,8 @@
 #include "V3String.h"
 #include "V3Task.h"
 
+#include <cstdarg>
+
 // More code; this file was getting too large; see actions there
 #define _V3WIDTH_CPP_
 #include "V3WidthCommit.h"
@@ -87,7 +86,9 @@
 //######################################################################
 
 enum Stage { PRELIM=1,FINAL=2,BOTH=3 };  // Numbers are a bitmask <0>=prelim, <1>=final
-std::ostream& operator<<(std::ostream& str, const Stage& rhs) { return str<<("-PFB"[(int)rhs]); }
+std::ostream& operator<<(std::ostream& str, const Stage& rhs) {
+    return str<<("-PFB"[static_cast<int>(rhs)]);
+}
 
 enum Determ {
     SELF,		// Self-determined
@@ -141,7 +142,7 @@ public:
 	if (!m_dtypep) {
 	    str<<"  VUP(s="<<m_stage<<",self)";
 	} else {
-	    str<<"  VUP(s="<<m_stage<<",dt="<<(void*)dtypep()<<")";
+            str<<"  VUP(s="<<m_stage<<",dt="<<cvtToHex(dtypep())<<")";
 	}
     }
 };
@@ -1645,9 +1646,9 @@ private:
 		for (int i = 0; i < arrayType->elementsConst(); ++i) {
 		    AstNode* arrayRef = nodep->fromp()->cloneTree(false);
 		    AstNode* selector = new AstArraySel(fl, arrayRef, i);
-		    if (!newp)
+                    if (!newp) {
 			newp = selector;
-		    else {
+                    } else {
 			switch (methodId) {
 			    case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
 			    case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
@@ -3658,7 +3659,8 @@ private:
 	    break;
 	}
 	if (!valp) valp = new AstConst(nodep->fileline(), AstConst::Signed32(), val);
-	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<valp<<endl);
+        UINFO(9," $dimension "<<attrType.ascii()
+              <<"("<<cvtToHex(dtypep)<<","<<dim<<")="<<valp<<endl);
 	return valp;
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {

@@ -20,19 +20,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <fstream>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
+
+#include <cstdarg>
+#include <iomanip>
+#include <vector>
 
 //======================================================================
 // Special methods
@@ -580,7 +577,9 @@ const char* AstScope::broken() const {
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
     if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep();
-    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep();
+    if (m_modp && static_cast<AstNode*>(m_modp)->clonep()) {
+        static_cast<AstNode*>(m_modp)->clonep();
+    }
 }
 
 string AstScope::nameDotless() const {
@@ -654,7 +653,7 @@ bool AstSenTree::hasCombo() const {
 void AstTypeTable::clearCache() {
     // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
     // Just clear out the maps; the search functions will be used to rebuild the map
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	m_basicps[i] = NULL;
     }
     for (int isbit=0; isbit<_IDX0_MAX; ++isbit) {
@@ -704,7 +703,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
     else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
     std::pair<int,int> widths = make_pair(width,widthMin);
-    LogicMap& mapr = m_logicMap[idx][(int)numeric];
+    LogicMap& mapr = m_logicMap[idx][static_cast<int>(numeric)];
     LogicMap::const_iterator it = mapr.find(widths);
     if (it != mapr.end()) return it->second;
     //
@@ -807,24 +806,25 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 // Per-type Debugging
 
 void AstNode::dump(std::ostream& str) {
-    str<<typeName()<<" "<<(void*)this
-	//<<" "<<(void*)this->m_backp
+    str<<typeName()<<" "<<cvtToHex(this)
+        //<<" "<<cvtToHex(this)->m_backp
        <<" <e"<<std::dec<<editCount()
        <<((editCount()>=editCountLast())?"#>":">")
        <<" {"<<fileline()->filenameLetters()<<std::dec<<fileline()->lineno()<<"}";
-    if (user1p()) str<<" u1="<<(void*)user1p();
-    if (user2p()) str<<" u2="<<(void*)user2p();
-    if (user3p()) str<<" u3="<<(void*)user3p();
-    if (user4p()) str<<" u4="<<(void*)user4p();
-    if (user5p()) str<<" u5="<<(void*)user5p();
+    if (user1p()) str<<" u1="<<cvtToHex(user1p());
+    if (user2p()) str<<" u2="<<cvtToHex(user2p());
+    if (user3p()) str<<" u3="<<cvtToHex(user3p());
+    if (user4p()) str<<" u4="<<cvtToHex(user4p());
+    if (user5p()) str<<" u5="<<cvtToHex(user5p());
     if (hasDType()) {
+        // Final @ so less likely to by accident read it as a nodep
 	if (dtypep()==this) str<<" @dt="<<"this@";
-	else str<<" @dt="<<(void*)dtypep()<<"@";  // Final @ so less likely to by accident think it's nodep
+        else str<<" @dt="<<cvtToHex(dtypep())<<"@";
 	if (AstNodeDType* dtp = dtypep()) {
 	    dtp->dumpSmall(str);
 	}
     } else { // V3Broken will throw an error
-	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
+        if (dtypep()) str<<" %Error-dtype-exp=null,got="<<cvtToHex(dtypep());
     }
     if (name()!="") {
         if (VN_IS(this, Const)) str<<"  "<<name();  // Already quoted
@@ -930,7 +930,7 @@ void AstNodeDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (generic()) str<<" [GENERIC]";
     if (AstNodeDType* dtp = virtRefDTypep()) {
-	str<<" refdt="<<(void*)(dtp);
+        str<<" refdt="<<cvtToHex(dtp);
 	dtp->dumpSmall(str);
     }
 }
@@ -993,7 +993,7 @@ void AstMTaskBody::dump(std::ostream& str) {
 }
 void AstTypeTable::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	if (AstBasicDType* subnodep=m_basicps[i]) {
 	    str<<endl;  // Newline from caller, so newline first
             str<<"\t\t"<<std::setw(8)<<AstBasicDTypeKwd(i).ascii();
@@ -1040,7 +1040,7 @@ void AstVarScope::dump(std::ostream& str) {
 }
 void AstVarXRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     str<<".="<<dotted()<<" ";
@@ -1051,7 +1051,7 @@ void AstVarXRef::dump(std::ostream& str) {
 }
 void AstVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     if (varScopep()) { varScopep()->dump(str); }
@@ -1096,7 +1096,7 @@ void AstParseRef::dump(std::ostream& str) {
 }
 void AstPackageRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (packagep()) { packagep()->dump(str); }
     else { str<<"UNLINKED"; }
@@ -1112,7 +1112,7 @@ void AstActive::dump(std::ostream& str) {
 }
 void AstNodeFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (dotted()!="") { str<<".="<<dotted()<<" "; }
     if (taskp()) { taskp()->dump(str); }

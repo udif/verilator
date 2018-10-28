@@ -20,8 +20,10 @@
 
 #ifndef _V3LINKLEVEL_H_
 #define _V3LINKLEVEL_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 
@@ -29,11 +31,11 @@
 
 class V3LinkLevel {
 private:
-    static void wrapTopCell(AstNetlist* nodep);
-    static void wrapTopPackages(AstNetlist* nodep);
+    static void wrapTopCell(AstNetlist* rootp);
+    static void wrapTopPackages(AstNetlist* rootp);
 public:
     static void modSortByLevel();
-    static void wrapTop(AstNetlist* nodep);
+    static void wrapTop(AstNetlist* rootp);
 };
 
 #endif // Guard

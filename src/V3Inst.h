@@ -20,8 +20,10 @@
 
 #ifndef _V3INST_H_
 #define _V3INST_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 
@@ -31,8 +33,8 @@ class V3Inst {
 public:
     static void instAll(AstNetlist* nodep);
     static void dearrayAll(AstNetlist* nodep);
-    static AstAssignW* pinReconnectSimple(AstPin* nodep, AstCell* cellp,
-					  bool forTristate, bool alwaysCvt=false);
+    static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp,
+                                          bool forTristate, bool alwaysCvt=false);
 };
 
 #endif // Guard

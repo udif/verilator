@@ -24,16 +24,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <algorithm>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3LinkLValue.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 // Link state, as a visitor of each AstNode
@@ -272,10 +271,10 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkLValue::linkLValue(AstNetlist* rootp) {
+void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     {
-        LinkLValueVisitor visitor(rootp, false);
+        LinkLValueVisitor visitor(nodep, false);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

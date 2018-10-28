@@ -18,17 +18,18 @@
 //
 //*************************************************************************
 
-#include <cstdio>
-#include <cstdarg>
-#include <fstream>
-#include <iomanip>
-#include <memory>
+#include "config_build.h"
+#include "verilatedos.h"
 
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Broken.h"
 #include "V3String.h"
+
+#include <cstdarg>
+#include <iomanip>
+#include <memory>
 
 //======================================================================
 // Statics
@@ -230,7 +231,7 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
     // Only for use for those really nasty bugs relating to internals
     // Note this may be null.
     //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "
-    //                 <<prefix<<": "<<(void*)this<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
+    //                 <<prefix<<": "<<cvtToHex(this)<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
     //if (debug()) {
     //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
     //	// Commenting out the section below may crash, as the tree state
@@ -418,8 +419,8 @@ void AstNode::replaceWith(AstNode* newp) {
 }
 
 void AstNRelinker::dump(std::ostream& str) const {
-    str<<" BK="<<(uint32_t*)m_backp;
-    str<<" ITER="<<(uint32_t*)m_iterpp;
+    str<<" BK="<<reinterpret_cast<uint32_t*>(m_backp);
+    str<<" ITER="<<reinterpret_cast<uint32_t*>(m_iterpp);
     str<<" CHG="<<(m_chg==RELINK_NEXT?"[NEXT] ":"");
     str<<(m_chg==RELINK_OP1?"[OP1] ":"");
     str<<(m_chg==RELINK_OP2?"[OP2] ":"");
@@ -669,13 +670,13 @@ void AstNode::deleteNode() {
     UASSERT(!m_backp, "Delete called on node with backlink still set");
     editCountInc();
     // Change links of old node so we coredump if used
-    this->m_nextp = (AstNode*)1;
-    this->m_backp = (AstNode*)1;
-    this->m_headtailp = (AstNode*)1;
-    this->m_op1p = (AstNode*)1;
-    this->m_op2p = (AstNode*)1;
-    this->m_op3p = (AstNode*)1;
-    this->m_op4p = (AstNode*)1;
+    this->m_nextp = reinterpret_cast<AstNode*>(0x1);
+    this->m_backp = reinterpret_cast<AstNode*>(0x1);
+    this->m_headtailp = reinterpret_cast<AstNode*>(0x1);
+    this->m_op1p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op2p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op3p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op4p = reinterpret_cast<AstNode*>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
         1
@@ -787,8 +788,8 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 	niterp->accept(v);
 	// accept may do a replaceNode and change niterp on us...
         // niterp maybe NULL, so need cast if printing
-        //if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep
-        //                             <<" now into "<<(void*)niterp<<endl);
+        //if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<cvtToHex(nodep)
+        //                             <<" now into "<<cvtToHex(niterp)<<endl);
 	if (!niterp) return;  // Perhaps node deleted inside accept
 	niterp->m_iterpp = NULL;
 	if (VL_UNLIKELY(niterp!=nodep)) { // Edited node inside accept
@@ -997,23 +998,23 @@ void AstNode::checkIter() const {
 }
 
 void AstNode::dumpPtrs(std::ostream& os) const {
-    os<<"This="<<typeName()<<" "<<(void*)this;
-    os<<" back="<<(void*)backp();
-    if (nextp()) os<<" next="<<(void*)nextp();
+    os<<"This="<<typeName()<<" "<<cvtToHex(this);
+    os<<" back="<<cvtToHex(backp());
+    if (nextp()) os<<" next="<<cvtToHex(nextp());
     if (m_headtailp==this) os<<" headtail=this";
-    else os<<" headtail="<<(void*)m_headtailp;
-    if (op1p()) os<<" op1p="<<(void*)op1p();
-    if (op2p()) os<<" op2p="<<(void*)op2p();
-    if (op3p()) os<<" op3p="<<(void*)op3p();
-    if (op4p()) os<<" op4p="<<(void*)op4p();
-    if (user1p()) os<<" user1p="<<(void*)user1p();
-    if (user2p()) os<<" user2p="<<(void*)user2p();
-    if (user3p()) os<<" user3p="<<(void*)user3p();
-    if (user4p()) os<<" user4p="<<(void*)user4p();
-    if (user5p()) os<<" user5p="<<(void*)user5p();
+    else os<<" headtail="<<cvtToHex(m_headtailp);
+    if (op1p()) os<<" op1p="<<cvtToHex(op1p());
+    if (op2p()) os<<" op2p="<<cvtToHex(op2p());
+    if (op3p()) os<<" op3p="<<cvtToHex(op3p());
+    if (op4p()) os<<" op4p="<<cvtToHex(op4p());
+    if (user1p()) os<<" user1p="<<cvtToHex(user1p());
+    if (user2p()) os<<" user2p="<<cvtToHex(user2p());
+    if (user3p()) os<<" user3p="<<cvtToHex(user3p());
+    if (user4p()) os<<" user4p="<<cvtToHex(user4p());
+    if (user5p()) os<<" user5p="<<cvtToHex(user5p());
     if (m_iterpp) {
-	os<<" iterpp="<<(void*)m_iterpp;
-	os<<"*="<<(void*)*m_iterpp;
+        os<<" iterpp="<<cvtToHex(m_iterpp);
+        os<<"*="<<cvtToHex(*m_iterpp);
     }
     os<<endl;
 }
@@ -1076,7 +1077,9 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
 	nsstr<<str.str();
 	if (debug()) {
 	    nsstr<<endl;
-	    nsstr<<"-node: "; ((AstNode*)this)->dump(nsstr); nsstr<<endl;
+            nsstr<<"-node: ";
+            const_cast<AstNode*>(this)->dump(nsstr);
+            nsstr<<endl;
 	}
 	m_fileline->v3errorEnd(nsstr);
     }

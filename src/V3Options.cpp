@@ -20,19 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifndef _WIN32
-# include <sys/utsname.h>
-#endif
-#include <cctype>
-#include <dirent.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <set>
-#include <list>
-#include <map>
-#include <memory>
 
 #include "V3Global.h"
 #include "V3String.h"
@@ -41,6 +28,19 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3PreShell.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifndef _WIN32
+# include <sys/utsname.h>
+#endif
+#include <cctype>
+#include <dirent.h>
+#include <fcntl.h>
+#include <list>
+#include <map>
+#include <memory>
+#include <set>
 
 #include "config_rev.h"
 
@@ -248,7 +248,7 @@ string V3Options::allArgsString() {
 V3LangCode::V3LangCode(const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
     for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::_ENUM_END; ++codei) {
-	V3LangCode code = (V3LangCode)codei;
+        V3LangCode code = V3LangCode(codei);
 	if (0==strcasecmp(textp,code.ascii())) {
 	    m_e = code; return;
 	}
@@ -260,7 +260,8 @@ V3LangCode::V3LangCode(const char* textp) {
 // File searching
 
 bool V3Options::fileStatDir(const string& filename) {
-    struct stat	sstat;		// Stat information
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    struct stat sstat;  // Stat information
     int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
     if (!S_ISDIR(sstat.st_mode)) return false;
@@ -268,7 +269,8 @@ bool V3Options::fileStatDir(const string& filename) {
 }
 
 bool V3Options::fileStatNormal(const string& filename) {
-    struct stat	sstat;		// Stat information
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    struct stat sstat;  // Stat information
     int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
     if (S_ISDIR(sstat.st_mode)) return false;
@@ -450,6 +452,7 @@ string V3Options::getenvSYSTEMC_ARCH() {
         string sysname = "WIN32";
         var = "win32";
 #else
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 	struct utsname uts;
 	uname(&uts);
 	string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
@@ -667,6 +670,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-decoration", flag/*ref*/) ) { m_decoration = flag; }
+            else if ( onoff   (sw, "-dump-defines", flag/*ref*/) ) { m_dumpDefines = flag; }
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
@@ -678,6 +682,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-pins-sc-uint", flag/*ref*/) ){ m_pinsScUint = flag; if (!m_pinsScBigUint) m_pinsBv = 65; }
 	    else if ( onoff   (sw, "-pins-sc-biguint", flag/*ref*/) ){ m_pinsScBigUint = flag; m_pinsBv = 513; }
 	    else if ( onoff   (sw, "-pins-uint8", flag/*ref*/) ){ m_pinsUint8 = flag; }
+            else if ( onoff   (sw, "-pp-comments", flag/*ref*/) ) { m_ppComments = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
             else if ( onoff   (sw, "-prof-cfuncs", flag/*ref*/) )       { m_profCFuncs = flag; }
             else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )    { m_profCFuncs = flag; }  // Undocumented, for backward compat
@@ -1164,7 +1169,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Convert to argv style arg list and parse them
     char* argv [args.size()+1];
     for (unsigned i=0; i<args.size(); ++i) {
-	argv[i] = (char*)args[i].c_str();
+        argv[i] = const_cast<char*>(args[i].c_str());
     }
     parseOptsList(fl, optdir, args.size(), argv);
 }
@@ -1250,6 +1255,7 @@ V3Options::V3Options() {
     m_debugPartition = false;
     m_debugSelfTest = false;
     m_decoration = true;
+    m_dumpDefines = false;
     m_exe = false;
     m_ignc = false;
     m_inhibitSim = false;
@@ -1262,6 +1268,7 @@ V3Options::V3Options() {
     m_pinsScUint = false;
     m_pinsScBigUint = false;
     m_pinsUint8 = false;
+    m_ppComments = false;
     m_profCFuncs = false;
     m_profThreads = false;
     m_preprocOnly = false;

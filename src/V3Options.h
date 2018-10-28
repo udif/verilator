@@ -23,13 +23,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
-#include <vector>
-#include <map>
-#include <set>
 
 #include "V3Global.h"
 #include "V3LangCode.h"
+
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 class V3OptionsImp;
 class FileLine;
@@ -116,6 +117,7 @@ class V3Options {
     bool        m_debugPartition;  // main switch: --debug-partition
     bool        m_debugSelfTest;  // main switch: --debug-self-test
     bool	m_decoration;	// main switch: --decoration
+    bool        m_dumpDefines;  // main switch: --dump-defines
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
@@ -125,6 +127,7 @@ class V3Options {
     bool	m_pinsScUint;   // main switch: --pins-sc-uint
     bool	m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool	m_pinsUint8;	// main switch: --pins-uint8
+    bool        m_ppComments;   // main switch: --pp-comments
     bool        m_profCFuncs;   // main switch: --prof-cfuncs
     bool        m_profThreads;  // main switch: --prof-threads
     bool	m_public;	// main switch: --public
@@ -213,7 +216,7 @@ class V3Options {
 
   private:
     // METHODS
-    void addArg(const string& flag);
+    void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
@@ -237,9 +240,9 @@ class V3Options {
     ~V3Options();
     void setDebugMode(int level);
     void setDebugSrcLevel(const string& srcfile, int level);
-    int debugSrcLevel(const string& srcfile, int default_level=V3Error::debugDefault());
+    int debugSrcLevel(const string& srcfile_path, int default_level=V3Error::debugDefault());
     void setDumpTreeLevel(const string& srcfile, int level);
-    int dumpTreeLevel(const string& srcfile);
+    int dumpTreeLevel(const string& srcfile_path);
 
     // METHODS
     void addCppFile(const string& filename);
@@ -281,6 +284,7 @@ class V3Options {
     bool debugPartition() const { return m_debugPartition; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool decoration() const { return m_decoration; }
+    bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
@@ -296,6 +300,7 @@ class V3Options {
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
+    bool ppComments() const { return m_ppComments; }
     bool profCFuncs() const { return m_profCFuncs; }
     bool profThreads() const { return m_profThreads; }
     bool allPublic() const { return m_public; }

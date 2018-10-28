@@ -27,16 +27,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
 #include "V3Changed.h"
 #include "V3Const.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Inst state, as a visitor of each AstNode

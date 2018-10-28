@@ -23,15 +23,16 @@
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_lxt2_c.h"
+
 // Include the GTKWave implementation directly
 #include "gtkwave/lxt2_write.cpp"
 
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <algorithm>
 #include <cerrno>
 #include <ctime>
-#include <algorithm>
+#include <fcntl.h>
 #include <sstream>
+#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>

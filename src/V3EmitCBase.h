@@ -23,14 +23,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
 
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <cmath>
 
 //######################################################################
 // Base Visitor class -- holds output file pointer
@@ -59,7 +58,7 @@ public:
     static string topClassName() {		// Return name of top wrapper module
 	return v3Global.opt.prefix();
     }
-    AstCFile* newCFile(const string& filename, bool slow, bool source) {
+    static AstCFile* newCFile(const string& filename, bool slow, bool source) {
 	AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
 	cfilep->slow(slow);
 	cfilep->source(source);

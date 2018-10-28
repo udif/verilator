@@ -23,10 +23,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <list>
 
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
+
+#include <list>
 
 //*************************************************************************
 // MTasks and graph structures
@@ -95,7 +96,7 @@ public:
     }
     string name() const { return string("mt")+cvtToStr(id()); }
     void dump(std::ostream& str) const {
-        str <<name()<<"."<<((void*)this);
+        str <<name()<<"."<<cvtToHex(this);
         if (priority() || cost()) str <<" [pr="<<priority()<<" c="<<cvtToStr(cost())<<"]";
         if (thread() != 0xffffffff) str <<" th="<<thread();
         if (threadRoot()) str <<" [ROOT]";

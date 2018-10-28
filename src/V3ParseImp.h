@@ -20,13 +20,16 @@
 
 #ifndef _V3PARSEIMP_H_
 #define _V3PARSEIMP_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
+
 #include <deque>
 
 class V3Lexer;
@@ -197,7 +200,7 @@ public:
     int  bisonParse();
 
     // Interactions with lexer
-    void lexNew(int debug);
+    void lexNew();
     void lexDestroy();
     void statePop();		// Parser -> lexer communication
     static int stateVerilogRecent();	// Parser -> lexer communication
@@ -241,6 +244,7 @@ private:
     void lexFile(const string& modname);
     int yylexReadTok();
     void lexToken(); // Internal; called from lexToBison
+    void preprocDumps(std::ostream& os);
 };
 
 #endif // Guard

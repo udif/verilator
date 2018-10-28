@@ -27,11 +27,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3Broken.h"
@@ -39,6 +34,10 @@
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 
@@ -59,10 +58,11 @@ public:
     // METHODS
     static void deleted(const AstNode* nodep) {
 	// Called by operator delete on any node - only if VL_LEAK_CHECKS
-	if (debug()>=9) cout<<"-nodeDel:  "<<(void*)(nodep)<<endl;
+        if (debug()>=9) cout<<"-nodeDel:  "<<cvtToHex(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)) {
-	    ((AstNode*)(nodep))->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
+            reinterpret_cast<const AstNode*>(nodep)
+                ->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
 	}
 	if (iter!=s_nodes.end()) s_nodes.erase(iter);
     }
@@ -72,7 +72,7 @@ public:
 #endif
     static void addNewed(const AstNode* nodep) {
 	// Called by operator new on any node - only if VL_LEAK_CHECKS
-	if (debug()>=9) cout<<"-nodeNew:  "<<(void*)(nodep)<<endl;
+        if (debug()>=9) cout<<"-nodeNew:  "<<cvtToHex(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
 	    nodep->v3fatalSrc("Newing AstNode object that is already allocated");
@@ -156,7 +156,9 @@ public:
 		    // may be varp() and other cross links that are bad.
 		    if (v3Global.opt.debugCheck()) {
                         std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
-                        ((AstNode*)(it->first))->AstNode::dump(std::cerr);
+                        AstNode* rawp = const_cast<AstNode*>
+                            (static_cast<const AstNode*>(it->first));
+                        rawp->AstNode::dump(std::cerr);
                         std::cerr<<endl;
 			V3Error::incErrors();
 		    }
@@ -225,9 +227,12 @@ private:
 	}
 	if (nodep->dtypep()) {
             if (!nodep->dtypep()->brokeExists()) {
-                nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep()); }
-            else if (!VN_IS(nodep->dtypep(), NodeDType)) {
-                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep()); }
+                nodep->v3fatalSrc("Broken link in node->dtypep() to "
+                                  <<cvtToHex(nodep->dtypep()));
+            } else if (!VN_IS(nodep->dtypep(), NodeDType)) {
+                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "
+                                  <<cvtToHex(nodep->dtypep()));
+            }
 	}
 	if (v3Global.assertDTypesResolved()) {
 	    if (nodep->hasDType()) {

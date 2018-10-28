@@ -20,16 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <stack>
-#include <map>
-#include <set>
 
 #include "V3Global.h"
 #include "V3GraphDfa.h"
 #include "V3GraphAlg.h"
+
+#include <cstdarg>
+#include <map>
+#include <set>
+#include <stack>
 
 //######################################################################
 //######################################################################
@@ -160,9 +159,7 @@ private:
 	}
 	// If we saw all of the nodes, then they have the same number of hits
 	// (Else something in dfa1p that wasn't in dfa2p)
-	if (num1s != num2s) return false;
-	// Match
-	return true;
+        return (num1s == num2s);
     }
 
     void insertDfaOrigins(DfaVertex* dfaStatep) {
@@ -304,7 +301,7 @@ private:
             for (std::set<int>::const_iterator inIt=inputs.begin(); inIt!=inputs.end(); ++inIt) {
 		DfaInput input = *inIt;
 		UINFO(9,"    ==="<<++i<<"=======================\n");
-		UINFO(9,"    On input "<<(void*)(input.toNodep())<<endl);
+                UINFO(9,"    On input "<<cvtToHex(input.toNodep())<<endl);
 
 		// Find all states reachable for given input
 		DfaStates nfasWithInput;

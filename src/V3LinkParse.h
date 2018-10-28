@@ -20,8 +20,10 @@
 
 #ifndef _V3LINKPARSE_H_
 #define _V3LINKPARSE_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 
@@ -29,7 +31,7 @@
 
 class V3LinkParse {
 public:
-    static void linkParse(AstNetlist* nodep);
+    static void linkParse(AstNetlist* rootp);
 };
 
 #endif // Guard

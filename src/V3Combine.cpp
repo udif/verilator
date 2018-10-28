@@ -36,18 +36,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Combine.h"
 #include "V3Hashed.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 
@@ -70,7 +69,7 @@ protected:
     // Also repair it for DPI functions; when make __common need to insure proper
     // flags get inherited from the old to new AstCFunc, and that AstText doesn't
     // get split between functions causing the text to have a danginling reference.
-    bool statementCombine() { return false && duplicateFunctionCombine(); }
+    bool statementCombine() { return false; }  // duplicateFunctionCombine();
 };
 
 //######################################################################

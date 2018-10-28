@@ -23,18 +23,19 @@
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_fst_c.h"
+
 // Include the GTKWave implementation directly
-#include "gtkwave/fstapi.c"
 #include "gtkwave/fastlz.c"
+#include "gtkwave/fstapi.c"
 #include "gtkwave/lz4.c"
 
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <algorithm>
 #include <cerrno>
 #include <ctime>
-#include <algorithm>
-#include <sstream>
+#include <fcntl.h>
 #include <iterator>
+#include <sstream>
+#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
@@ -106,7 +107,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name,
                               int dtypenum, fstVarDir vardir, fstVarType vartype,
                               int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
-        = m_code2symbol.insert(std::make_pair(code, (fstHandle)(0)));
+        = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
     std::istream_iterator<std::string> beg(nameiss), end;
     std::list<std::string> tokens(beg, end);  // Split name

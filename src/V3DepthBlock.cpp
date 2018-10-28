@@ -26,15 +26,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3DepthBlock.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 

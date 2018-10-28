@@ -20,17 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <iomanip>
 
 #include "V3Global.h"
 #include "V3Assert.h"
 #include "V3Ast.h"
 #include "V3GraphDfa.h"
 #include "V3Stats.h"
+
+#include <cstdarg>
+#include <iomanip>
 
 //######################################################################
 // Assert class functions
@@ -77,13 +75,14 @@ private:
     AstNode* newIfAssertOn(AstNode* nodep) {
 	// Add a internal if to check assertions are on.
 	// Don't make this a AND term, as it's unlikely to need to test this.
+        FileLine* fl = nodep->fileline();
 	AstNode* newp
-            = new AstIf(nodep->fileline(),
+            = new AstIf(fl,
                         // If assertions are off, have constant propagation rip them out later
                         // This allows syntax errors and such to be detected normally.
                         (v3Global.opt.assertOn()
-                         ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
-                         : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
+                         ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
+                         : static_cast<AstNode*>(new AstConst(fl, AstConst::LogicFalse()))),
                         nodep, NULL);
 	newp->user1(true); // Don't assert/cover this if
 	return newp;

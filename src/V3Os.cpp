@@ -20,26 +20,26 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <climits>
-#include <cstdlib>
+
+#include "V3Global.h"
+#include "V3String.h"
+#include "V3Os.h"
+
 #include <cerrno>
+#include <climits>
+#include <cstdarg>
+#include <dirent.h>
 #include <fcntl.h>
 #include <iomanip>
 #include <memory>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #if defined(WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
 
-#include "V3Global.h"
-#include "V3String.h"
-#include "V3Os.h"
 
 //######################################################################
 // Environment
@@ -208,6 +208,7 @@ uint64_t V3Os::timeUsecs() {
 #if defined(_WIN32) || defined(__MINGW32__)
     return 0;
 #else
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timeval tv;
     if (gettimeofday(&tv, NULL) < 0) return 0;
     return static_cast<uint64_t>(tv.tv_sec)*1000000 + tv.tv_usec;

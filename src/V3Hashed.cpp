@@ -27,18 +27,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <iomanip>
-#include <map>
-#include <memory>
 
 #include "V3Global.h"
 #include "V3Hashed.h"
 #include "V3Ast.h"
 #include "V3File.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <iomanip>
+#include <map>
+#include <memory>
 
 //######################################################################
 // Hashed state, as a visitor of each AstNode

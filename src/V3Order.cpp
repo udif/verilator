@@ -78,16 +78,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include <deque>
-#include <map>
-#include <iomanip>
-#include <sstream>
-#include <memory>
 
 #include "V3Ast.h"
 #include "V3Const.h"
@@ -106,6 +96,14 @@
 #include "V3Order.h"
 #include "V3OrderGraph.h"
 
+#include <algorithm>
+#include <cstdarg>
+#include <deque>
+#include <iomanip>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <vector>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
 
@@ -172,8 +170,8 @@ public:
     }
     string name() const {
 	return (string("MDS:")
-		+" d="+cvtToStr((void*)domainp())
-		+" s="+cvtToStr((void*)scopep()));
+                +" d="+cvtToHex(domainp())
+                +" s="+cvtToHex(scopep()));
     }
 };
 
@@ -751,7 +749,7 @@ private:
 	    m_orderUserps.push_back(newup);
 	    varscp->user1p(newup);
 	}
-	OrderUser* up = (OrderUser*)(varscp->user1p());
+        OrderUser* up = reinterpret_cast<OrderUser*>(varscp->user1p());
 	OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
 	return varVxp;
     }
@@ -1061,7 +1059,8 @@ private:
 			// clock_enable attribute: user's worring about it for us
 			con = false;
 		    }
-		    if (m_inClkAss && (varscp->varp()->attrClocker()) != AstVarAttrClocker::CLOCKER_YES) {
+                    if (m_inClkAss && (varscp->varp()->attrClocker()
+                                       != AstVarAttrClocker::CLOCKER_YES)) {
 			con = false;
 			UINFO(4, "nodep used as clock_enable "<<varscp<<" in "<<m_logicVxp->nodep()<<endl);
 		    }
@@ -1089,10 +1088,12 @@ private:
 			    } else {
 				// If the lhs is a clocker, avoid marking that as circular by
 				// putting a hard edge instead of normal cuttable
-				if (varscp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES)
+                                if (varscp->varp()->attrClocker()
+                                    == AstVarAttrClocker::CLOCKER_YES) {
 				    new OrderEdge(&m_graph, m_logicVxp, varVxp, WEIGHT_NORMAL);
-				else
+                                } else {
 				    new OrderComboCutEdge(&m_graph, m_logicVxp, varVxp);
+                                }
 			    }
 			    // For m_inPost:
 			    //    Add edge consumed_var_POST->logic_vertex
@@ -1356,7 +1357,7 @@ void OrderVisitor::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec&
     // Also, determine if this vertex is an input
     int inonly = 1;  // 0=no, 1=maybe, 2=yes until a no
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
-	OrderEitherVertex* frVertexp = (OrderEitherVertex*)edgep->fromp();
+        OrderEitherVertex* frVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
 	processInputsInIterate(frVertexp, todoVec);
 	if (frVertexp->isFromInput()) {
 	    if (inonly==1) inonly = 2;
@@ -1395,7 +1396,7 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     {
 	// Propagate PrimaryIn through simple assignments, followint target of vertex
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
+            OrderEitherVertex* toVertexp = static_cast<OrderEitherVertex*>(edgep->top());
 	    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
 		processInputsInIterate(vvertexp, todoVec);
 	    }
@@ -1508,11 +1509,12 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     }
     if (!domainp) {
 	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	    OrderEitherVertex* fromVertexp = (OrderEitherVertex*)edgep->fromp();
+            OrderEitherVertex* fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
 	    if (edgep->weight()
 		&& fromVertexp->domainMatters()
 		) {
-		UINFO(9,"     from d="<<(void*)fromVertexp->domainp()<<" "<<fromVertexp<<endl);
+                UINFO(9,"     from d="<<cvtToHex(fromVertexp->domainp())
+                      <<" "<<fromVertexp<<endl);
 		if (!domainp  // First input to this vertex
 		    || domainp->hasSettle()	// or, we can ignore being in the settle domain
 		    || domainp->hasInitial()) {
@@ -1570,7 +1572,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     //
     vertexp->domainp(domainp);
     if (vertexp->domainp()) {
-	UINFO(5,"      done d="<<(void*)vertexp->domainp()
+        UINFO(5,"      done d="<<cvtToHex(vertexp->domainp())
 	      <<(vertexp->domainp()->hasCombo()?" [COMB]":"")
 	      <<(vertexp->domainp()->isMulti()?" [MULT]":"")
 	      <<" "<<vertexp<<endl);
@@ -1598,7 +1600,7 @@ void OrderVisitor::processEdgeReport() {
 	    else if (dynamic_cast<OrderVarSettleVertex*>(itp)) name += " {STL}";
             std::ostringstream os;
             os.setf(std::ios::left);
-            os<<"  "<<(void*)(vvertexp->varScp())<<" "<<std::setw(50)<<name<<" ";
+            os<<"  "<<cvtToHex(vvertexp->varScp())<<" "<<std::setw(50)<<name<<" ";
 	    AstSenTree* sentreep = vvertexp->domainp();
 	    if (sentreep) V3EmitV::verilogForTree(sentreep, os);
 	    report.push_back(os.str());
@@ -1722,7 +1724,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
     // Mark our outputs as one closer to ready
     for (V3GraphEdge* edgep = vertexp->outBeginp(), *nextp; edgep; edgep=nextp) {
 	nextp = edgep->outNextp();
-	OrderMoveVertex* toVertexp = (OrderMoveVertex*)edgep->top();
+        OrderMoveVertex* toVertexp = static_cast<OrderMoveVertex*>(edgep->top());
 	UINFO(9,"          Clear to "<<(toVertexp->inEmpty()?"[EMP] ":"      ")
 	      <<toVertexp<<endl);
 	// Delete this edge
@@ -1741,8 +1743,8 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     }
     const OrderLogicVertex* lvertexp = vertexp->logicp();
     const AstScope* scopep = lvertexp->scopep();
-    UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())
-          <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
+    UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<cvtToHex(lvertexp->domainp())
+          <<" s="<<cvtToHex(scopep)<<" "<<lvertexp<<endl);
     AstActive* newActivep = processMoveOneLogic(lvertexp, m_pomNewFuncp/*ref*/,
                                                 m_pomNewStmts/*ref*/);
     if (newActivep) m_scopetopp->addActivep(newActivep);

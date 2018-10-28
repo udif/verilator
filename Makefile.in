@@ -427,20 +427,33 @@ endif
 endif
 
 # Use --xml flag to see the cppcheck code to use for suppression
+CPPCHECK_CPP = $(wildcard \
+	$(srcdir)/include/*.cpp \
+	$(srcdir)/src/*.cpp )
+CPPCHECK_H = $(wildcard \
+	$(srcdir)/include/*.h \
+	$(srcdir)/src/*.h )
 CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList
 CPPCHECK_FLAGS += --xml
-CPPCHECK_CPP = $(wildcard \
-	$(srcdir)/include/*.cpp \
-	$(srcdir)/include/gtkwave/*.cpp \
-	$(srcdir)/src/*.cpp)
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))
 CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
 	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+
+CLANGTIDY = clang-tidy
+CLANGTIDY_FLAGS = -config=''
+CLANGTIDY_DEP = $(subst .h,.h.tidy,$(CPPCHECK_H)) \
+	$(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
+
+clangtidy: $(CLANGTIDY_DEP)
+%.cpp.tidy: %.cpp
+	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) | 2>&1 tee $@
+%.h.tidy: %.h
+	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) | 2>&1 tee $@
 
 analyzer-src:
 	-rm -rf src/obj_dbg
@@ -483,8 +496,8 @@ endif
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
-	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* *.1 $(INFOS) configure
+	@echo "rebuilding the deleted files requires autoconf."
+	rm -f configure
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
@@ -502,6 +515,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf examples/*/obj_dir examples/*/logs
 
 distclean maintainer-clean::
+	rm -f *.info* *.1 $(INFOS)
 	rm -f Makefile config.status config.cache config.log TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*

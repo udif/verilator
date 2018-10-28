@@ -48,11 +48,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <set>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Trace.h"
@@ -60,6 +55,10 @@
 #include "V3Graph.h"
 #include "V3Hashed.h"
 #include "V3Stats.h"
+
+#include <cstdarg>
+#include <map>
+#include <set>
 
 //######################################################################
 // Graph vertexes
@@ -537,7 +536,7 @@ private:
 	TraceTraceVertex* dupvertexp = vvertexp;
 	if (dupvertexp->duplicatep()) {
 	    dupvertexp = dupvertexp->duplicatep();
-	    UINFO(9,"   dupOf "<<((void*)dupvertexp)<<" "<<((void*)dupvertexp->nodep())
+            UINFO(9,"   dupOf "<<cvtToHex(dupvertexp)<<" "<<cvtToHex(dupvertexp->nodep())
 		  <<" "<<dupvertexp<<endl);
 	    if (dupvertexp->duplicatep()) dupvertexp->nodep()->v3fatalSrc("Original node was marked as a duplicate");
 	}
