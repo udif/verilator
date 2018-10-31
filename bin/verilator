@@ -289,6 +289,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
+    --dump-defines              Show preprocessor defines with -E
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
@@ -338,6 +339,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --pins-sc-biguint           Specify types for top level ports
     --pins-uint8                Specify types for top level ports
     --pipe-filter <command>     Filter all input through a script
+    --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top level class
     --prof-cfuncs               Name functions for profiling
     --prof-threads              Enable generating gantt chart data for threads
@@ -386,6 +388,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
+    --xml-only                  Create XML parser output
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the arguments to run-time Verilated arguments.
@@ -717,6 +720,15 @@ then the latest SystemVerilog language (IEEE 1800-2017) is used.
 Defines the given preprocessor symbol, or multiple symbols if separated by
 plusses.  Similar to -D; +define is fairly standard across Verilog tools
 while -D is an alias for GCC compatibility.
+
+=item --dump-defines
+
+With -E, suppress normal output, and instead print a list of all defines
+existing at the end of pre-processing the input files. Similar to GCC "-dM"
+option. This also gives you a way of finding out what is predefined in
+Verilator using the command:
+
+   touch foo.v ; verilator -E --dump-defines foo.v
 
 =item --dump-tree
 
@@ -1082,6 +1094,10 @@ t/t_pipe_filter test for an example.
 
 To debug the output of the filter, try using the -E option to see
 preprocessed output.
+
+=item --pp-comments
+
+With -E, show comments in preprocessor output.
 
 =item --prefix I<topname>
 
@@ -1508,6 +1524,14 @@ B<Note.> Some users have reported that using this option can affect
 convergence, and that it may be necessary to use --converge-limit to
 increase the number of convergence iterations. This may be another
 indication of problems with the modelled design that should be addressed.
+
+=item --xml-only
+
+Create XML output only, do not create any other output.
+
+The XML format is intended to be used to leverage Verilator's parser and
+elaboration to feed to other downstream tools. Be aware that the XML format
+is still evolving; there will be some changes in future versions.
 
 =item -y I<dir>
 

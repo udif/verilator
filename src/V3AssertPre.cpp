@@ -23,15 +23,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <iomanip>
 
 #include "V3Global.h"
 #include "V3AssertPre.h"
-#include "V3Ast.h"
+
+#include <cstdarg>
+#include <iomanip>
 
 //######################################################################
 // Assert class functions

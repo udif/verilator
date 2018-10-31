@@ -27,17 +27,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include <map>
 
 #include "V3Global.h"
 #include "V3SplitAs.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 

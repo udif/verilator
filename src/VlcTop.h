@@ -23,6 +23,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "VlcOptions.h"
 #include "VlcTest.h"
 #include "VlcPoint.h"
@@ -34,12 +35,12 @@
 class VlcTop {
 public:
     // PUBLIC MEMBERS
-    VlcOptions opt;		//< Runtime options
+    VlcOptions opt;  //< Runtime options
 private:
     // MEMBERS
-    VlcTests	m_tests;	//< List of all tests (all coverage files)
-    VlcPoints	m_points;	//< List of all points
-    VlcSources	m_sources;	//< List of all source files to annotate
+    VlcTests m_tests;  //< List of all tests (all coverage files)
+    VlcPoints m_points;  //< List of all points
+    VlcSources m_sources;  //< List of all source files to annotate
 
     // METHODS
     void createDir(const string& dirname);
@@ -67,4 +68,4 @@ public:
 
 //######################################################################
 
-#endif // guard
+#endif  // guard

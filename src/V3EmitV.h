@@ -20,8 +20,10 @@
 
 #ifndef _V3EMITV_H_
 #define _V3EMITV_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 
@@ -32,7 +34,7 @@ public:
     static void emitv();
     static void verilogForTree(AstNode* nodep, std::ostream& os=std::cout);
     static void verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
-				    AstSenTree* domainp, bool user3percent);
+                                    AstSenTree* domainp, bool user3mark);
 };
 
 #endif // Guard

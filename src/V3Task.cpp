@@ -29,10 +29,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Const.h"
@@ -42,6 +38,9 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Graph subclasses
@@ -263,7 +262,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
-	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
+            UINFO(9, "    relinkVar "<<cvtToHex(nodep->varp()->user2p())<<" "<<nodep<<endl);
             AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
 	    if (!newvscp) nodep->v3fatalSrc("not linked");
 	    nodep->varScopep(newvscp);
@@ -333,9 +332,9 @@ private:
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
         AstVar* newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
                                      funcp->findBasicDType(kwd));
-	newvarp->funcLocal(true);
-	newvarp->combineType(AstVarType::INPUT);
-	funcp->addArgsp(newvarp);
+        newvarp->funcLocal(true);
+        newvarp->direction(VDirection::INPUT);
+        funcp->addArgsp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
 	m_scopep->addVarp(newvscp);
 	return newvscp;
@@ -379,10 +378,13 @@ private:
 		pinp->unlinkFrBack();   // Relinked to assignment below
 		argp->unlinkFrBack()->deleteTree(); // Args no longer needed
 		//
-                if ((portp->isInout() || portp->isOutput()) && VN_IS(pinp, Const)) {
-		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
-		}
-		else if (portp->isInout()) {
+                if (portp->isWritable() && VN_IS(pinp, Const)) {
+                    pinp->v3error("Function/task "
+                                  +portp->direction().prettyName()  // e.g. "output"
+                                  +" connected to constant instead of variable: "
+                                  +portp->prettyName());
+                }
+                else if (portp->isInoutish()) {
 		    // Correct lvalue; see comments below
 		    V3LinkLValue::linkLValueSet(pinp);
 
@@ -394,9 +396,9 @@ private:
 		    } else {
 			pinp->v3warn(E_TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 		    }
-		}
-		else if (portp->isOutput()) {
-		    // Make output variables
+                }
+                else if (portp->isWritable()) {
+                    // Make output variables
 		    // Correct lvalue; we didn't know when we linked
 		    // This is slightly scary; are we sure no decisions were made
 		    // before here based on this not being a lvalue?
@@ -413,9 +415,9 @@ private:
 		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment BEHIND of all other statements
 		    beginp->addNext(assp);
-		}
-		else if (portp->isInput()) {
-		    // Make input variable
+                }
+                else if (portp->isNonOutput()) {
+                    // Make input variable
                     AstVarScope* inVscp = createVarScope(portp, namePrefix+"__"+portp->shortName());
 		    portp->user2p(inVscp);
                     AstAssign* assp = new AstAssign(pinp->fileline(),
@@ -484,10 +486,13 @@ private:
 	    } else {
 		UINFO(9, "     Port "<<portp<<endl);
 		UINFO(9, "      pin "<<pinp<<endl);
-                if ((portp->isInout() || portp->isOutput()) && VN_IS(pinp, Const)) {
-		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
-		}
-		else if (portp->isInout()) {
+                if (portp->isWritable() && VN_IS(pinp, Const)) {
+                    pinp->v3error("Function/task "
+                                  +portp->direction().prettyName()  // e.g. "output"
+                                  +" connected to constant instead of variable: "
+                                  +portp->prettyName());
+                }
+                else if (portp->isInoutish()) {
 		    // Correct lvalue; see comments below
 		    V3LinkLValue::linkLValueSet(pinp);
 
@@ -496,9 +501,9 @@ private:
 		    } else {
 			pinp->v3warn(E_TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 		    }
-		}
-		else if (portp->isOutput()) {
-		    // Make output variables
+                }
+                else if (portp->isWritable()) {
+                    // Make output variables
 		    // Correct lvalue; we didn't know when we linked
 		    // This is slightly scary; are we sure no decisions were made
 		    // before here based on this not being a lvalue?
@@ -719,12 +724,17 @@ private:
 		    // No createDpiTemp; we make a real internal variable instead
 		    // SAME CODE BELOW
 		    args+= ", ";
-		    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
+                    if (args != "") {
+                        argnodesp = argnodesp->addNext(
+                            new AstText(portp->fileline(), args, true));
+                        args="";
+                    }
                     AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
-		    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
-		    argnodesp = argnodesp->addNextNull(refp);
+                    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
+                                                    portp->isWritable());
+                    argnodesp = argnodesp->addNextNull(refp);
 
-		    if (portp->isInput()) {
+                    if (portp->isNonOutput()) {
 			dpip->addStmtsp(createAssignDpiToInternal(outvscp, portp->name(), false));
 		    }
 		}
@@ -737,9 +747,9 @@ private:
 	    args+= ", ";
 	    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
             AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
-	    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
-	    argnodesp = argnodesp->addNextNull(refp);
-	}
+            AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isWritable());
+            argnodesp = argnodesp->addNextNull(refp);
+        }
 
 	{// Call the user function
 	    // Add the variables referenced as VarRef's so that lifetime analysis
@@ -756,11 +766,11 @@ private:
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
-		if (portp->isIO() && portp->isOutput() && !portp->isFuncReturn()) {
-		    dpip->addStmtsp(createAssignInternalToDpi(portp,false,true,"__Vcvt",""));
-		}
-	    }
-	}
+                if (portp->isIO() && portp->isWritable() && !portp->isFuncReturn()) {
+                    dpip->addStmtsp(createAssignInternalToDpi(portp,false,true,"__Vcvt",""));
+                }
+            }
+        }
 
 	if (rtnvarp) {
 	    dpip->addStmtsp(createDpiTemp(rtnvarp,""));
@@ -768,7 +778,7 @@ private:
 	    string stmt = "return "+rtnvarp->name()+";\n";
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
@@ -790,7 +800,7 @@ private:
         dpip->dpiImport(true);
 	// Add DPI reference to top, since it's a global function
 	m_topScopep->scopep()->addActivep(dpip);
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
@@ -812,7 +822,7 @@ private:
         }
     }
 
-    void makePortList(AstNodeFTask* nodep, AstVar* rtnvarp, AstCFunc* dpip) {
+    void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -859,22 +869,23 @@ private:
                         // At runtime we need the svOpenArrayHandle to point to this task & thread's data,
                         // in addition to static info about the variable
                         string name = portp->name()+"__Vopenarray";
-                        string varCode = ("VerilatedDpiOpenVar "+name
-                                          +" (&"+propName+", &"+portp->name()+");\n");
+                        string varCode = ("VerilatedDpiOpenVar "
+                                          // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                          +name+" (&"+propName+", &"+portp->name()+");\n");
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), varCode));
                         args += "&"+name;
                     }
                     else {
                         if (bitvec) {}
                         else if (logicvec) {}
-                        else if (portp->isOutput()) args += "&";
+                        else if (portp->isWritable()) args += "&";
                         else if (portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
                                  && portp->width() != 1) args += "&";  // it's a svBitVecVal (2-32 bits wide)
 
                         args += portp->name()+"__Vcvt";
 
                         cfuncp->addStmtsp(createDpiTemp(portp,"__Vcvt"));
-                        if (portp->isInput()) {
+                        if (portp->isNonOutput()) {
                             cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,false,"","__Vcvt"));
                         }
 		    }
@@ -900,7 +911,7 @@ private:
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())
+                if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
                     && !portp->isDpiOpenArray()) {
                     AstVarScope* portvscp = VN_CAST(portp->user2p(), VarScope);  // Remembered when we created it earlier
 		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt",true));
@@ -963,7 +974,7 @@ private:
             rtnvarp->user2p(rtnvscp);
         }
 
-	string prefix = "";
+        string prefix;
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
 	else if (nodep->dpiExport()) prefix = "__Vdpiexp_";
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
@@ -1292,7 +1303,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
 	    if (portp->isIO()) {
-		tconnects.push_back(make_pair(portp, (AstArg*)NULL));
+                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
 		nameToIndex.insert(make_pair(portp->name(), tpinnum)); // For name based connections
 		tpinnum++;
 		if (portp->attrSFormat()) {
@@ -1330,7 +1341,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 	} else { // By pin number
 	    if (ppinnum >= tpinnum) {
 		if (sformatp) {
-		    tconnects.push_back(make_pair(sformatp, (AstArg*)NULL));
+                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(NULL)));
 		    tconnects[ppinnum].second = argp;
 		    tpinnum++;
 		} else {
@@ -1396,7 +1407,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
     if (debug()>=9) {
 	nodep->dumpTree(cout,"-ftref-out: ");
-	for (int i=0; i<tpinnum; ++i) UINFO(0,"   pin "<<i<<"  conn="<<(void*)tconnects[i].second<<endl);
+        for (int i=0; i<tpinnum; ++i) {
+            UINFO(0,"   pin "<<i<<"  conn="<<cvtToHex(tconnects[i].second)<<endl);
+        }
     }
     return tconnects;
 }

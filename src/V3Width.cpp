@@ -69,9 +69,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Width.h"
@@ -80,6 +77,8 @@
 #include "V3String.h"
 #include "V3Task.h"
 
+#include <cstdarg>
+
 // More code; this file was getting too large; see actions there
 #define _V3WIDTH_CPP_
 #include "V3WidthCommit.h"
@@ -87,7 +86,9 @@
 //######################################################################
 
 enum Stage { PRELIM=1,FINAL=2,BOTH=3 };  // Numbers are a bitmask <0>=prelim, <1>=final
-std::ostream& operator<<(std::ostream& str, const Stage& rhs) { return str<<("-PFB"[(int)rhs]); }
+std::ostream& operator<<(std::ostream& str, const Stage& rhs) {
+    return str<<("-PFB"[static_cast<int>(rhs)]);
+}
 
 enum Determ {
     SELF,		// Self-determined
@@ -141,7 +142,7 @@ public:
 	if (!m_dtypep) {
 	    str<<"  VUP(s="<<m_stage<<",self)";
 	} else {
-	    str<<"  VUP(s="<<m_stage<<",dt="<<(void*)dtypep()<<")";
+            str<<"  VUP(s="<<m_stage<<",dt="<<cvtToHex(dtypep())<<")";
 	}
     }
 };
@@ -1286,7 +1287,10 @@ private:
 	    if (!nodep->widthMin()) nodep->v3fatalSrc("LHS var should be size complete");
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"  VRout ");
-	if (nodep->lvalue() && nodep->varp()->isConst()
+        if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
+            nodep->v3error("Assigning to const ref variable: "<<nodep->prettyName());
+        }
+        else if (nodep->lvalue() && nodep->varp()->isConst()
 	    && !m_paramsOnly
 	    && !m_initialp) {  // Too loose, but need to allow our generated first assignment
 	    //                 // Move this to a property of the AstInitial block
@@ -1645,9 +1649,9 @@ private:
 		for (int i = 0; i < arrayType->elementsConst(); ++i) {
 		    AstNode* arrayRef = nodep->fromp()->cloneTree(false);
 		    AstNode* selector = new AstArraySel(fl, arrayRef, i);
-		    if (!newp)
+                    if (!newp) {
 			newp = selector;
-		    else {
+                    } else {
 			switch (methodId) {
 			    case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
 			    case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
@@ -2318,7 +2322,13 @@ private:
 		}
 		userIterateAndNext(nodep->exprp(), WidthVP(subDTypep,FINAL).p());
 	    } else {
-		if (nodep->modVarp()->isTristate()) {
+                if (nodep->modVarp()->direction() == VDirection::REF) {
+                    nodep->v3error("Ref connection '"<<nodep->modVarp()->prettyName()<<"'"
+                                   <<" requires matching types;"
+                                   <<" ref requires "<<pinDTypep->prettyTypeName()
+                                   <<" but connection is "
+                                   <<conDTypep->prettyTypeName()<<"."<<endl);
+                } else if (nodep->modVarp()->isTristate()) {
 		    if (pinwidth != conwidth) {
 			nodep->v3error("Unsupported: "<<ucfirst(nodep->prettyOperatorName())
 				       <<" to inout signal requires "<<pinwidth
@@ -2556,9 +2566,16 @@ private:
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
-                if ((portp->isOutput() || portp->isInout())
-                    && pinp->width() != portp->width()) {
-                    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
+                if (portp->direction() == VDirection::REF
+                    && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
+                    pinp->v3error("Ref argument requires matching types;"
+                                  <<" port '"<<portp->prettyName()<<"'"
+                                  <<" requires "<<portp->prettyTypeName()
+                                  <<" but connection is "<<pinp->prettyTypeName()<<".");
+                } else if (portp->isWritable()
+                           && pinp->width() != portp->width()) {
+                    pinp->v3error("Unsupported: Function output argument '"
+                                  <<portp->prettyName()<<"'"
                                   <<" requires "<<portp->width()
                                   <<" bits, but connection's "<<pinp->prettyTypeName()
                                   <<" generates "<<pinp->width()<<" bits.");
@@ -3343,8 +3360,9 @@ private:
                 AstNodeAssign* assignp = VN_CAST(nodep, NodeAssign);
                 AstPin* pinp = VN_CAST(nodep, Pin);
                 if (assignp && VN_IS(assignp->lhsp(), NodeStream)) {
-		} else if (pinp && !pinp->modVarp()->isInput()) {  // V3Inst::pinReconnectSimple must deal
-		    UINFO(5,"pinInSizeMismatch: "<<pinp);
+                } else if (pinp && pinp->modVarp()->direction() != VDirection::INPUT) {
+                    // V3Inst::pinReconnectSimple must deal
+                    UINFO(5,"pinInSizeMismatch: "<<pinp);
 		} else {
 		    fixWidthExtend(underp, expDTypep, extendRule); VL_DANGLING(underp);//Changed
 		}
@@ -3658,7 +3676,8 @@ private:
 	    break;
 	}
 	if (!valp) valp = new AstConst(nodep->fileline(), AstConst::Signed32(), val);
-	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<valp<<endl);
+        UINFO(9," $dimension "<<attrType.ascii()
+              <<"("<<cvtToHex(dtypep)<<","<<dim<<")="<<valp<<endl);
 	return valp;
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {

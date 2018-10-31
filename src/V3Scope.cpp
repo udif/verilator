@@ -27,18 +27,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <iomanip>
-#include <map>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Scope.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <iomanip>
+#include <map>
+#include VL_INCLUDE_UNORDERED_MAP
+#include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // Scope class functions
@@ -107,7 +106,9 @@ private:
 	UINFO(4," MOD AT "<<scopename<<"  "<<nodep<<endl);
         AstNode::user1ClearTree();
 
-	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
+        m_scopep = new AstScope((m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp)
+                                 : static_cast<AstNode*>(nodep))
+                                ->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
         if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(VN_CAST(nodep, Package), m_scopep));
 

@@ -25,11 +25,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Error.h"
+#include "V3Global.h"
+#include "V3File.h"
+#include "V3Graph.h"
+#include "V3TSP.h"
+
 #include <cassert>
 #include <cmath>
-#include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
@@ -39,12 +43,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "V3Error.h"
-#include "V3Global.h"
-#include "V3File.h"
-#include "V3Graph.h"
-#include "V3TSP.h"
 #include VL_INCLUDE_UNORDERED_SET
 #include VL_INCLUDE_UNORDERED_MAP
 
@@ -432,7 +430,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Make this TSP implementation work for graphs of size 0 or 1
     // which, unfortunately, is a special case as the following
     // code assumes >= 2 nodes.
-    if (states.size() == 0) {
+    if (states.empty()) {
         return;
     }
     if (states.size() == 1) {
@@ -552,7 +550,7 @@ public:
         unsigned xabs, yabs;
         xabs = diff(otherp->m_xpos, m_xpos);
         yabs = diff(otherp->m_ypos, m_ypos);
-        return (int)(0.5 + sqrt(xabs*xabs + yabs*yabs));
+        return lround(sqrt(xabs*xabs + yabs*yabs));
     }
     unsigned xpos() const {
         return m_xpos;

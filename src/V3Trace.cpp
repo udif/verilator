@@ -48,11 +48,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <set>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Trace.h"
@@ -60,6 +55,10 @@
 #include "V3Graph.h"
 #include "V3Hashed.h"
 #include "V3Stats.h"
+
+#include <cstdarg>
+#include <map>
+#include <set>
 
 //######################################################################
 // Graph vertexes
@@ -537,7 +536,7 @@ private:
 	TraceTraceVertex* dupvertexp = vvertexp;
 	if (dupvertexp->duplicatep()) {
 	    dupvertexp = dupvertexp->duplicatep();
-	    UINFO(9,"   dupOf "<<((void*)dupvertexp)<<" "<<((void*)dupvertexp->nodep())
+            UINFO(9,"   dupOf "<<cvtToHex(dupvertexp)<<" "<<cvtToHex(dupvertexp->nodep())
 		  <<" "<<dupvertexp<<endl);
 	    if (dupvertexp->duplicatep()) dupvertexp->nodep()->v3fatalSrc("Original node was marked as a duplicate");
 	}
@@ -700,11 +699,11 @@ private:
 	    }
 	    V3GraphVertex* traceVtxp = m_tracep->user1u().toGraphVertex();
 	    new V3GraphEdge(&m_graph, varVtxp, traceVtxp, 1);
-	    if (nodep->varp()->isPrimaryIn()   // Always need to trace primary inputs
-		|| nodep->varp()->isSigPublic()) {  // Or ones user can change
-		new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
-	    }
-	}
+            if (nodep->varp()->isPrimaryInish()  // Always need to trace primary inputs
+                || nodep->varp()->isSigPublic()) {  // Or ones user can change
+                new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
+            }
+        }
 	else if (m_funcp && m_finding && nodep->lvalue()) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    V3GraphVertex* funcVtxp = getCFuncVertexp(m_funcp);

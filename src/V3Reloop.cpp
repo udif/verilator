@@ -35,15 +35,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Reloop.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 #define RELOOP_MIN_ITERS 40  // Need at least this many loops to do this optimization
 

@@ -20,13 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <iostream>
-#include <algorithm>
-#include <list>
-#include <set>
 
 #include "V3Global.h"
 #include "V3PreShell.h"
@@ -34,6 +27,12 @@
 #include "V3File.h"
 #include "V3Parse.h"
 #include "V3Os.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <iostream>
+#include <list>
+#include <set>
 
 //######################################################################
 
@@ -167,4 +166,7 @@ void V3PreShell::defineCmdLine(const string& name, const string& value) {
 }
 void V3PreShell::undef(const string& name) {
     V3PreShellImp::s_preprocp->undef(name);
+}
+void V3PreShell::dumpDefines(std::ostream& os) {
+    V3PreShellImp::s_preprocp->dumpDefines(os);
 }

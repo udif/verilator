@@ -20,13 +20,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3GraphDfa.h"
+
+#include <cstdarg>
 
 //######################################################################
 //######################################################################
@@ -335,7 +334,7 @@ public:
     virtual string name() { return "import"; }
     virtual void runTest() {
 	DfaGraph* gp = &m_graph;
-	if (V3GraphTest::debug()) gp->debug(9);
+        if (V3GraphTest::debug()) DfaGraph::debug(9);
 	dotImport();
 	dump();
 	gp->acyclic(&V3GraphEdge::followAlwaysTrue);

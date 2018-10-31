@@ -25,13 +25,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3GenClk.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
 
 //######################################################################
 // GenClk state, as a visitor of each AstNode

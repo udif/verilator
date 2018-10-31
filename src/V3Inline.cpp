@@ -30,12 +30,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Inline.h"
@@ -43,6 +37,11 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 #include "V3String.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 // CONFIG
 static const int INLINE_MODS_SMALLER = 100;	// If a mod is < this # nodes, can always inline it
@@ -318,23 +317,26 @@ private:
 		// Public variable at the lower module end - we need to make sure we propagate
 		// the logic changes up and down; if we aliased, we might remove the change detection
 		// on the output variable.
-		UINFO(9,"public pin assign: "<<exprvarrefp<<endl);
-		if (nodep->isInput()) nodep->v3fatalSrc("Outputs only - inputs use AssignAlias");
-		m_modp->addStmtp(new AstAssignW(nodep->fileline(),
-						new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
-						new AstVarRef(nodep->fileline(), nodep, false)));
-	    } else if (nodep->isIfaceRef()) {
-		m_modp->addStmtp(new AstAssignVarScope(nodep->fileline(),
-						       new AstVarRef(nodep->fileline(), nodep, true),
-						       new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
-		AstNode* nodebp=exprvarrefp->varp();
-		nodep ->fileline()->modifyStateInherit(nodebp->fileline());
-		nodebp->fileline()->modifyStateInherit(nodep ->fileline());
-	    } else {
-		// Do to inlining child's variable now within the same module, so a AstVarRef not AstVarXRef below
-		m_modp->addStmtp(new AstAssignAlias(nodep->fileline(),
-						    new AstVarRef(nodep->fileline(), nodep, true),
-						    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+                UINFO(9,"public pin assign: "<<exprvarrefp<<endl);
+                if (nodep->isNonOutput()) nodep->v3fatalSrc("Outputs only - inputs use AssignAlias");
+                m_modp->addStmtp(
+                    new AstAssignW(nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+                                   new AstVarRef(nodep->fileline(), nodep, false)));
+            } else if (nodep->isIfaceRef()) {
+                m_modp->addStmtp(
+                    new AstAssignVarScope(nodep->fileline(),
+                                          new AstVarRef(nodep->fileline(), nodep, true),
+                                          new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+                AstNode* nodebp=exprvarrefp->varp();
+                nodep ->fileline()->modifyStateInherit(nodebp->fileline());
+                nodebp->fileline()->modifyStateInherit(nodep ->fileline());
+            } else {
+                // Do to inlining child's variable now within the same module, so a AstVarRef not AstVarXRef below
+                m_modp->addStmtp(
+                    new AstAssignAlias(nodep->fileline(),
+                                       new AstVarRef(nodep->fileline(), nodep, true),
+                                       new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
 		AstNode* nodebp=exprvarrefp->varp();
 		nodep ->fileline()->modifyStateInherit(nodebp->fileline());
 		nodebp->fileline()->modifyStateInherit(nodep ->fileline());
@@ -550,11 +552,12 @@ private:
 
 		AstNode* connectRefp = pinp->exprp();
                 if (!VN_IS(connectRefp, Const) && !VN_IS(connectRefp, VarRef)) {
-		    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
-		}
-                if (pinNewVarp->isOutOnly() && VN_IS(connectRefp, Const)) {
-		    pinp->v3error("Output port is connected to a constant pin, electrical short");
-		}
+                    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
+                }
+                if (pinNewVarp->direction() == VDirection::OUTPUT
+                    && VN_IS(connectRefp, Const)) {
+                    pinp->v3error("Output port is connected to a constant pin, electrical short");
+                }
 
 		// Propagate any attributes across the interconnect
 		pinNewVarp->propagateAttrFrom(pinOldVarp);
@@ -568,11 +571,13 @@ private:
 		UINFO(6,"One-to-one "<<connectRefp<<endl);
 		UINFO(6,"       -to "<<pinNewVarp<<endl);
 		pinNewVarp->user2p(connectRefp);
-		// Public output inside the cell must go via an assign rather than alias
-		// Else the public logic will set the alias, losing the value to be propagated up
-		// (InOnly isn't a problem as the AssignAlias will create the assignment for us)
-		pinNewVarp->user3(pinNewVarp->isSigUserRWPublic() && pinNewVarp->isOutOnly());
-	    }
+                // Public output inside the cell must go via an assign rather
+                // than alias.  Else the public logic will set the alias, losing
+                // the value to be propagated up (InOnly isn't a problem as the
+                // AssignAlias will create the assignment for us)
+                pinNewVarp->user3(pinNewVarp->isSigUserRWPublic()
+                                  && pinNewVarp->direction()==VDirection::OUTPUT);
+            }
 	    // Cleanup var names, etc, to not conflict
 	    { InlineRelinkVisitor(newmodp, m_modp, nodep); }
 	    // Move statements to top module

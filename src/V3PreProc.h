@@ -23,10 +23,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 
-#include <string>
 #include <map>
 #include <list>
 #include <iostream>
@@ -90,8 +90,9 @@ public:
     virtual string removeDefines(const string& text)=0;	// Remove defines in a text string
 
     // UTILITIES
-    void error(const string& msg) { fileline()->v3error(msg); }	///< Report a error
-    void fatal(const string& msg) { fileline()->v3fatalSrc(msg); }	///< Report a fatal error
+    void error(const string& msg) { fileline()->v3error(msg); }  ///< Report an error
+    void fatal(const string& msg) { fileline()->v3fatalSrc(msg); }  ///< Report a fatal error
+    virtual void dumpDefines(std::ostream& os) = 0;  ///< Print list of `defines
 
 protected:
     // CONSTUCTORS
@@ -100,7 +101,7 @@ protected:
     };
     void configure(FileLine* fl);
 public:
-    static V3PreProc* createPreProc(FileLine* fileline);
+    static V3PreProc* createPreProc(FileLine* fl);
     virtual ~V3PreProc() {}
 };
 

@@ -20,15 +20,16 @@
 
 #ifndef _V3AST_H_
 #define _V3AST_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
-#include <vector>
+
 #include <cmath>
-#include <map>
 #include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast__gen_classes.h"	// From ./astgen
@@ -463,18 +464,61 @@ public:
 
 //######################################################################
 
+class VDirection {
+public:
+    enum en {
+        NONE,
+        INPUT,
+        OUTPUT,
+        INOUT,
+        REF,
+        CONSTREF
+    };
+    enum en m_e;
+    inline VDirection() : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VDirection(en _e) : m_e(_e) {}
+    explicit inline VDirection(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {
+            "NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
+        return names[m_e]; }
+    string verilogKwd() const {
+        static const char* const names[] = {
+            "", "input", "output", "inout", "ref", "const ref"};
+        return names[m_e]; }
+    string xmlKwd() const {  // For historical reasons no "put" suffix
+        static const char* const names[] = {
+            "", "in", "out", "inout", "ref", "const ref"};
+        return names[m_e]; }
+    string prettyName() const { return verilogKwd(); }
+    bool isAny() const { return m_e != NONE; }
+    // Looks like inout - "ish" because not identical to being an INOUT
+    bool isInoutish() const { return m_e == INOUT; }
+    bool isNonOutput() const { return m_e == INPUT || m_e == INOUT
+            || m_e == REF || m_e == CONSTREF; }
+    bool isReadOnly() const { return m_e == INPUT || m_e == CONSTREF; }
+    bool isWritable() const { return m_e == OUTPUT || m_e == INOUT
+            || m_e == REF; }
+    bool isRefOrConstRef() const { return m_e == REF || m_e == CONSTREF; }
+  };
+  inline bool operator== (VDirection lhs, VDirection rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VDirection lhs, VDirection::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VDirection::en lhs, VDirection rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {
-	UNKNOWN,
-	GPARAM,
-	LPARAM,
-	GENVAR,
-	VAR,		// Reg, integer, logic, etc
-	INPUT,
-	OUTPUT,
-	INOUT,
-	SUPPLY0,
+        UNKNOWN,
+        GPARAM,
+        LPARAM,
+        GENVAR,
+        VAR,  // Reg, integer, logic, etc
+        SUPPLY0,
 	SUPPLY1,
 	WIRE,
 	WREAL,
@@ -496,20 +540,19 @@ public:
     explicit inline AstVarType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
-	static const char* const names[] = {
-	    "?","GPARAM","LPARAM","GENVAR",
-	    "VAR","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","WREAL","IMPLICITWIRE",
-	    "TRIWIRE","TRI0","TRI1",
-	    "PORT",
-	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP",
-	    "IFACEREF"};
-	return names[m_e]; }
+        static const char* const names[] = {
+            "?", "GPARAM", "LPARAM", "GENVAR", "VAR",
+            "SUPPLY0", "SUPPLY1", "WIRE", "WREAL", "IMPLICITWIRE",
+            "TRIWIRE", "TRI0", "TRI1",
+            "PORT",
+            "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
+            "IFACEREF"};
+        return names[m_e]; }
     bool isSignal() const  { return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
-				     || m_e==TRIWIRE
-				     || m_e==TRI0 || m_e==TRI1
-				     || m_e==SUPPLY0 || m_e==SUPPLY1
-				     || m_e==VAR); }
+                                     || m_e==TRIWIRE
+                                     || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                                     || m_e==SUPPLY0 || m_e==SUPPLY1
+                                     || m_e==VAR); }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
@@ -1026,7 +1069,7 @@ std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
 // Prefetch a node.
 // The if() makes it faster, even though prefetch won't fault on null pointers
 #define ASTNODE_PREFETCH(nodep) \
-    { if (nodep) { VL_PREFETCH_RD(&(nodep->m_nextp)); VL_PREFETCH_RD(&(nodep->m_iterpp)); }}
+    { if (nodep) { VL_PREFETCH_RD(&((nodep)->m_nextp)); VL_PREFETCH_RD(&((nodep)->m_iterpp)); }}
 
 class AstNode {
     // v ASTNODE_PREFETCH depends on below ordering of members
@@ -1170,8 +1213,8 @@ public:
     static string dedotName(const string& namein);	// Name with dots removed
     static string prettyName(const string& namein);	// Name for printing out to the user
     static string encodeName(const string& namein);	// Encode user name into internal C representation
-    static string encodeNumber(vlsint64_t numin);	// Encode number into internal C representation
-    static string vcdName(const string& namein); // Name for printing out to vcd files
+    static string encodeNumber(vlsint64_t num);  // Encode number into internal C representation
+    static string vcdName(const string& namein);  // Name for printing out to vcd files
     string	prettyName() const { return prettyName(name()); }
     string 	prettyTypeName() const;			// "VARREF" for error messages
     virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
@@ -1346,13 +1389,13 @@ public:
     void	checkTree();  // User Interface version
     void	checkIter() const;
     void	clearIter() { m_iterpp=NULL; }
-    void        dumpPtrs(std::ostream& str=std::cout) const;
-    void        dumpTree(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
-    void	dumpTreeGdb(); // For GDB only
-    void        dumpTreeAndNext(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
-    static void	dumpTreeFileGdb(const char* filenamep=NULL);
+    void dumpPtrs(std::ostream& os=std::cout) const;
+    void dumpTree(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
+    void dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
+    void dumpTreeGdb();  // For GDB only
+    void dumpTreeAndNext(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
+    void dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
+    static void dumpTreeFileGdb(const char* filenamep=NULL);
 
     // METHODS - queries
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays
@@ -1797,7 +1840,7 @@ public:
     bool widthSized() const { return !m_widthMin || m_widthMin==m_width; }
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
-    AstNodeDType* dtypeDimensionp(int depth);
+    AstNodeDType* dtypeDimensionp(int dimension);
     std::pair<uint32_t,uint32_t> dimensions(bool includeBasic);
     uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }

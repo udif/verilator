@@ -20,17 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include <map>
-#include <memory>
 
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Graph.h"
+
+#include <cstdarg>
+#include <map>
+#include <memory>
+#include <vector>
 
 int V3Graph::s_debug = 0;
 int V3Graph::debug() { return std::max(V3Error::debugDefault(), s_debug); }
@@ -279,7 +277,7 @@ void V3Graph::loopsMessageCb(V3GraphVertex* vertexp) {
 
 void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    std::cerr<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;
+    std::cerr<<"-Info-Loop: "<<cvtToHex(vertexp)<<" "<<vertexp<<endl;
 }
 
 void V3Graph::dump(std::ostream& os) {

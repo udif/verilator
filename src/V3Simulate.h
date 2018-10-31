@@ -36,8 +36,10 @@
 
 #ifndef _V3SIMULATE_H_
 #define _V3SIMULATE_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 #include "V3Width.h"
@@ -783,11 +785,11 @@ private:
 	    AstVar* portp = it->first;
 	    AstNode* pinp = it->second->exprp();
 	    if (pinp) {  // Else too few arguments in function call - ignore it
-		if (portp->isOutput()) {
-		    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
-		    return;
-		}
-		// Evaluate pin value
+                if (portp->isWritable()) {
+                    clearOptimizable(portp, "Language violation: Outputs/refs not allowed in constant functions");
+                    return;
+                }
+                // Evaluate pin value
                 iterate(pinp);
 	    }
 	}

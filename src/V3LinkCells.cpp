@@ -29,13 +29,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <algorithm>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3LinkCells.h"
@@ -43,6 +36,12 @@
 #include "V3Parse.h"
 #include "V3Ast.h"
 #include "V3Graph.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // Graph subclasses
@@ -460,14 +459,14 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parseSymp)
-	: m_mods(rootp) {
+    LinkCellsVisitor(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp)
+        : m_mods(nodep) {
 	m_filterp = filterp;
 	m_parseSymp = parseSymp;
 	m_modp = NULL;
 	m_libVertexp = NULL;
 	m_topVertexp = NULL;
-        iterate(rootp);
+        iterate(nodep);
     }
     virtual ~LinkCellsVisitor() {}
 };
@@ -475,7 +474,7 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkCells::link(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parseSymp) {
+void V3LinkCells::link(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkCellsVisitor visitor (rootp, filterp, parseSymp);
+    LinkCellsVisitor visitor (nodep, filterp, parseSymp);
 }

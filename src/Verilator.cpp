@@ -20,8 +20,6 @@
 
 #include "V3Global.h"
 #include "V3Ast.h"
-#include <ctime>
-#include <sys/stat.h>
 
 #include "V3Active.h"
 #include "V3ActiveTop.h"
@@ -95,6 +93,9 @@
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
+
+#include <ctime>
+#include <sys/stat.h>
 
 V3Global v3Global;
 
@@ -565,7 +566,7 @@ int main(int argc, char** argv, char** env) {
 
     time_t randseed;
     time(&randseed);
-    srand( (int) randseed);
+    srand(static_cast<int>(randseed));
 
     // Post-constructor initialization of netlists
     v3Global.boot();

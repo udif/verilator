@@ -20,18 +20,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
-#include <map>
-#include <vector>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3EmitXml.h"
 #include "V3EmitCBase.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 // Emit statements and math operators
@@ -100,6 +99,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     virtual void visit(AstCell* nodep) {
         outputTag(nodep, "instance");   // IEEE: vpiInstance
         puts(" defName="); putsQuoted(nodep->modName());  // IEEE vpiDefName
+        puts(" origName="); putsQuoted(nodep->origName());
         outputChildrenEnd(nodep, "instance");
     }
     virtual void visit(AstNetlist* nodep) {
@@ -109,21 +109,25 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
     virtual void visit(AstNodeModule* nodep) {
 	outputTag(nodep, "");
+	puts(" origName="); putsQuoted(nodep->origName());
 	if (nodep->level()==1 || nodep->level()==2) // ==2 because we don't add wrapper when in XML mode
 	    puts(" topModule=\"1\"");  // IEEE vpiTopModule
 	outputChildrenEnd(nodep, "");
     }
+    virtual void visit(AstVar* nodep) {
+	outputTag(nodep, "");
+	puts(" origName="); putsQuoted(nodep->origName());
+	outputChildrenEnd(nodep, "");
+    }
     virtual void visit(AstPin* nodep) {
-	// What we call a pin in verilator is a port in the IEEE spec.
-	outputTag(nodep, "port");	// IEEE: vpiPort
-	if (nodep->modVarp()->isInOnly())
-	    puts(" direction=\"in\"");
-	else if (nodep->modVarp()->isOutOnly())
-	    puts(" direction=\"out\"");
-	else puts(" direction=\"inout\"");
-	puts(" portIndex=\""+cvtToStr(nodep->pinNum())+"\""); // IEEE: vpiPortIndex
-	// Children includes vpiHighConn and vpiLowConn; we don't support port bits (yet?)
-	outputChildrenEnd(nodep, "port");
+        // What we call a pin in verilator is a port in the IEEE spec.
+        outputTag(nodep, "port");  // IEEE: vpiPort
+        if (nodep->modVarp()->isIO()) {
+            puts(" direction=\""+nodep->modVarp()->direction().xmlKwd()+"\"");
+        }
+        puts(" portIndex=\""+cvtToStr(nodep->pinNum())+"\"");  // IEEE: vpiPortIndex
+        // Children includes vpiHighConn and vpiLowConn; we don't support port bits (yet?)
+        outputChildrenEnd(nodep, "port");
     }
     virtual void visit(AstSenItem* nodep) {
         outputTag(nodep, "");

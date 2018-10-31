@@ -31,16 +31,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3Begin.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <vector>
 
 //######################################################################
 

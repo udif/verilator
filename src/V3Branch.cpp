@@ -29,14 +29,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Branch.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Branch state, as a visitor of each AstNode
@@ -135,7 +134,7 @@ public:
 //######################################################################
 // Branch class functions
 
-void V3Branch::branchAll(AstNetlist* rootp) {
+void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    BranchVisitor visitor (rootp);
+    BranchVisitor visitor (nodep);
 }

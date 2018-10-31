@@ -28,15 +28,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
 
 #include "V3Global.h"
 #include "V3Descope.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 
@@ -184,13 +183,14 @@ private:
 		    AstNode* argsp = NULL;
 		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
-			    if (portp->isIO() && !portp->isFuncReturn()) {
-				AstNode* newp = new AstVarRef(portp->fileline(), portp, portp->isOutput());
-				if (argsp) argsp = argsp->addNextNull(newp);
-				else argsp = newp;
-			    }
-			}
-		    }
+                            if (portp->isIO() && !portp->isFuncReturn()) {
+                                AstNode* newp = new AstVarRef(portp->fileline(),
+                                                              portp, portp->isWritable());
+                                if (argsp) argsp = argsp->addNextNull(newp);
+                                else argsp = newp;
+                            }
+                        }
+                    }
 
                     AstNode* returnp = new AstCReturn(funcp->fileline(),
                                                       new AstCCall(funcp->fileline(),

@@ -35,9 +35,8 @@
 #include "VlcOptions.h"
 #include "VlcTop.h"
 
-#include <fstream>
 #include <algorithm>
-#include <unistd.h>
+#include <fstream>
 
 //######################################################################
 // VlcOptions
@@ -172,7 +171,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     V3Error::abortIfWarnings();
-    if (top.opt.annotateOut() != "") {
+    if (!top.opt.annotateOut().empty()) {
         top.annotate(top.opt.annotateOut());
     }
 
@@ -181,7 +180,7 @@ int main(int argc, char** argv, char** env) {
 	top.tests().dump(false);
     }
 
-    if (top.opt.writeFile() != "") {
+    if (!top.opt.writeFile().empty()) {
 	top.writeCoverage(top.opt.writeFile());
 	V3Error::abortIfWarnings();
         if (top.opt.unlink()) {

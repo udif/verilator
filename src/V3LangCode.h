@@ -23,7 +23,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
+
 #include <vector>
 #include <map>
 #include <set>

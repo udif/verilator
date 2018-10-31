@@ -20,18 +20,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
-#include <map>
-#include <vector>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Os.h"
 #include "V3EmitMk.h"
 #include "V3EmitCBase.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 // Emit statements and math operators
@@ -208,6 +207,7 @@ public:
 	    for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 		string cppfile = *it;
 		string basename = V3Os::filenameNonExt(cppfile);
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
 		of.puts(basename+".o: "+cppfile+"\n");
 		of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
 	    }

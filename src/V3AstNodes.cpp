@@ -20,19 +20,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <fstream>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
+
+#include <cstdarg>
+#include <iomanip>
+#include <vector>
 
 //======================================================================
 // Special methods
@@ -181,89 +178,98 @@ void AstVar::combineType(AstVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
     // when we combine wires cross-hierarchy we need a union of all characteristics.
-    m_varType=type; 	// For debugging prints only
+    m_varType = type;
     // These flags get combined with the existing settings of the flags.
-    if (type==AstVarType::INPUT || type==AstVarType::INOUT) {
-	m_input = true;
-        m_declInput = true;
+    if (type==AstVarType::TRIWIRE || type==AstVarType::TRI0 || type==AstVarType::TRI1) {
+        m_tristate = true;
     }
-    if (type==AstVarType::OUTPUT || type==AstVarType::INOUT) {
-	m_output = true;
-	m_declOutput = true;
+    if (type==AstVarType::TRI0) {
+        m_isPulldown = true;
     }
-    if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE
-	|| type==AstVarType::TRI0 || type==AstVarType::TRI1)
-	m_tristate = true;
-    if (type==AstVarType::TRI0)
-	m_isPulldown = true;
-    if (type==AstVarType::TRI1)
-	m_isPullup = true;
+    if (type==AstVarType::TRI1) {
+        m_isPullup = true;
+    }
 }
 
 string AstVar::verilogKwd() const {
-    if (isInout()) {
-	return "inout";
-    } else if (isInput()) {
-	return "input";
-    } else if (isOutput()) {
-	return "output";
+    if (isIO()) {
+        return direction().verilogKwd();
     } else if (isTristate()) {
-	return "tri";
+        return "tri";
     } else if (varType()==AstVarType::WIRE) {
-	return "wire";
+        return "wire";
     } else if (varType()==AstVarType::WREAL) {
-	return "wreal";
+        return "wreal";
     } else {
-	return dtypep()->name();
+        return dtypep()->name();
     }
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     if (forReturn) named=false;
     if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
-    string arg;
-    if (isWide() && isInOnly()) arg += "const ";
+    string otype;
     AstBasicDType* bdtypep = basicp();
     bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
-	arg += "const char*";
+        otype += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
-	arg += "const VerilatedScope*";
+        otype += "const VerilatedScope*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::DOUBLE) {
-	arg += "double";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "double";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::FLOAT) {
-	arg += "float";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "float";
     } else if (strtype) {
-	if (isInOnly()) arg += "const ";
-	arg += "std::string";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "std::string";
     } else if (widthMin() <= 8) {
-	arg += "CData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "CData";
     } else if (widthMin() <= 16) {
-	arg += "SData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "SData";
     } else if (widthMin() <= VL_WORDSIZE) {
-	arg += "IData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "IData";
     } else if (isQuad()) {
-	arg += "QData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "QData";
     } else if (isWide()) {
-	arg += "WData";  // []'s added later
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "WData";  // []'s added later
     }
-    if (isDpiOpenArray() || (isWide() && !strtype)) {
-        arg += " (& "+name()+")";
+
+    bool mayparen = false;  // Need paren, to handle building "(& name)[2]"
+    string oname;
+    if (isDpiOpenArray()
+        || (isWide() && !strtype)
+        || (forFunc && (isWritable()
+                        || direction()==VDirection::REF
+                        || direction()==VDirection::CONSTREF
+                        || (strtype && isNonOutput())))) {
+        oname += "&";
+        mayparen = true;
+    }
+    if (named) oname += " "+name();
+
+    string oarray;
+    if (isDpiOpenArray() || direction().isRefOrConstRef()) {
         for (AstNodeDType* dtp=dtypep(); dtp; ) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
             if (AstUnpackArrayDType* adtypep = VN_CAST(dtp, UnpackArrayDType)) {
-                arg += "["+cvtToStr(adtypep->declRange().elements())+"]";
+                if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
+                oarray += "["+cvtToStr(adtypep->declRange().elements())+"]";
                 dtp = adtypep->subDTypep();
             } else break;
         }
-        if (isWide() && !strtype) {
-            arg += "["+cvtToStr(widthWords())+"]";
-        }
-    } else {
-        if (forFunc && (isOutput() || (strtype && isInput()))) arg += "&";
-	if (named) arg += " "+name();
     }
-    return arg;
+    if (isWide() && !strtype) {
+        if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
+        oarray += "["+cvtToStr(widthWords())+"]";
+    }
+    return otype+oname+oarray;
 }
 
 string AstVar::vlEnumType() const {
@@ -293,12 +299,12 @@ string AstVar::vlEnumType() const {
 
 string AstVar::vlEnumDir() const {
     string out;
-    if (isInout()) {
+    if (isInoutish()) {
         out = "VLVD_INOUT";
-    } else if (isInOnly()) {
-        out = "VLVD_IN";
-    } else if (isOutOnly()) {
+    } else if (isWritable()) {
         out = "VLVD_OUT";
+    } else if (isNonOutput()) {
+        out = "VLVD_IN";
     } else {
         out = "VLVD_NODIR";
     }
@@ -339,7 +345,7 @@ string AstVar::vlPropInit() const {
 string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
-    if (isWide() && isInOnly()) arg += "const ";
+    if (isWide() && isReadOnly()) arg += "const ";
     if (widthMin() == 1) {
 	arg += "bool";
     } else if (widthMin() <= VL_WORDSIZE) {
@@ -354,8 +360,9 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
 	arg += " (& "+name();
 	arg += ")["+cvtToStr(widthWords())+"]";
     } else {
-	if (isOutput() && !forReturn) arg += "&";
-	if (named) arg += " "+name();
+        if (!forReturn && (isWritable()
+                           || direction().isRefOrConstRef())) arg += "&";
+        if (named) arg += " "+name();
     }
     return arg;
 }
@@ -370,11 +377,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else if (basicp()->keyword().isDpiBitVal()) {
 	if (widthMin() == 1) {
 	    arg = "unsigned char";
-	    if (!forReturn && isOutput()) arg += "*";
-	} else {
-	    if (forReturn) {
-		arg = "svBitVecVal";
-	    } else if (isInOnly()) {
+            if (!forReturn && isWritable()) arg += "*";
+        } else {
+            if (forReturn) {
+                arg = "svBitVecVal";
+            } else if (isReadOnly()) {
 		arg = "const svBitVecVal*";
 	    } else {
 		arg = "svBitVecVal*";
@@ -383,11 +390,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else if (basicp()->keyword().isDpiLogicVal()) {
         if (widthMin() == 1) {
             arg = "unsigned char";
-            if (!forReturn && isOutput()) arg += "*";
+            if (!forReturn && isWritable()) arg += "*";
         } else {
             if (forReturn) {
                 arg = "svLogicVecVal";
-            } else if (isInOnly()) {
+            } else if (isReadOnly()) {
                 arg = "const svLogicVecVal*";
             } else {
                 arg = "svLogicVecVal*";
@@ -397,8 +404,8 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 	arg = basicp()->keyword().dpiType();
 	if (basicp()->keyword().isDpiUnsignable() && !basicp()->isSigned()) {
 	    arg = "unsigned "+arg;
-	}
-	if (!forReturn && isOutput()) arg += "*";
+        }
+        if (!forReturn && isWritable()) arg += "*";
     }
     if (named) arg += " "+name();
     return arg;
@@ -580,7 +587,9 @@ const char* AstScope::broken() const {
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
     if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep();
-    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep();
+    if (m_modp && static_cast<AstNode*>(m_modp)->clonep()) {
+        static_cast<AstNode*>(m_modp)->clonep();
+    }
 }
 
 string AstScope::nameDotless() const {
@@ -654,7 +663,7 @@ bool AstSenTree::hasCombo() const {
 void AstTypeTable::clearCache() {
     // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
     // Just clear out the maps; the search functions will be used to rebuild the map
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	m_basicps[i] = NULL;
     }
     for (int isbit=0; isbit<_IDX0_MAX; ++isbit) {
@@ -704,7 +713,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
     else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
     std::pair<int,int> widths = make_pair(width,widthMin);
-    LogicMap& mapr = m_logicMap[idx][(int)numeric];
+    LogicMap& mapr = m_logicMap[idx][static_cast<int>(numeric)];
     LogicMap::const_iterator it = mapr.find(widths);
     if (it != mapr.end()) return it->second;
     //
@@ -807,24 +816,25 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 // Per-type Debugging
 
 void AstNode::dump(std::ostream& str) {
-    str<<typeName()<<" "<<(void*)this
-	//<<" "<<(void*)this->m_backp
+    str<<typeName()<<" "<<cvtToHex(this)
+        //<<" "<<cvtToHex(this)->m_backp
        <<" <e"<<std::dec<<editCount()
        <<((editCount()>=editCountLast())?"#>":">")
        <<" {"<<fileline()->filenameLetters()<<std::dec<<fileline()->lineno()<<"}";
-    if (user1p()) str<<" u1="<<(void*)user1p();
-    if (user2p()) str<<" u2="<<(void*)user2p();
-    if (user3p()) str<<" u3="<<(void*)user3p();
-    if (user4p()) str<<" u4="<<(void*)user4p();
-    if (user5p()) str<<" u5="<<(void*)user5p();
+    if (user1p()) str<<" u1="<<cvtToHex(user1p());
+    if (user2p()) str<<" u2="<<cvtToHex(user2p());
+    if (user3p()) str<<" u3="<<cvtToHex(user3p());
+    if (user4p()) str<<" u4="<<cvtToHex(user4p());
+    if (user5p()) str<<" u5="<<cvtToHex(user5p());
     if (hasDType()) {
+        // Final @ so less likely to by accident read it as a nodep
 	if (dtypep()==this) str<<" @dt="<<"this@";
-	else str<<" @dt="<<(void*)dtypep()<<"@";  // Final @ so less likely to by accident think it's nodep
+        else str<<" @dt="<<cvtToHex(dtypep())<<"@";
 	if (AstNodeDType* dtp = dtypep()) {
 	    dtp->dumpSmall(str);
 	}
     } else { // V3Broken will throw an error
-	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
+        if (dtypep()) str<<" %Error-dtype-exp=null,got="<<cvtToHex(dtypep());
     }
     if (name()!="") {
         if (VN_IS(this, Const)) str<<"  "<<name();  // Already quoted
@@ -898,7 +908,7 @@ void AstModportFTaskRef::dump(std::ostream& str) {
 }
 void AstModportVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    str<<" "<<varType();
+    if (direction().isAny()) str<<" "<<direction();
     if (varp()) { str<<" -> "; varp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
@@ -930,7 +940,7 @@ void AstNodeDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (generic()) str<<" [GENERIC]";
     if (AstNodeDType* dtp = virtRefDTypep()) {
-	str<<" refdt="<<(void*)(dtp);
+        str<<" refdt="<<cvtToHex(dtp);
 	dtp->dumpSmall(str);
     }
 }
@@ -993,7 +1003,7 @@ void AstMTaskBody::dump(std::ostream& str) {
 }
 void AstTypeTable::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	if (AstBasicDType* subnodep=m_basicps[i]) {
 	    str<<endl;  // Newline from caller, so newline first
             str<<"\t\t"<<std::setw(8)<<AstBasicDTypeKwd(i).ascii();
@@ -1040,7 +1050,7 @@ void AstVarScope::dump(std::ostream& str) {
 }
 void AstVarXRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     str<<".="<<dotted()<<" ";
@@ -1051,7 +1061,7 @@ void AstVarXRef::dump(std::ostream& str) {
 }
 void AstVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     if (varScopep()) { varScopep()->dump(str); }
@@ -1061,12 +1071,8 @@ void AstVarRef::dump(std::ostream& str) {
 void AstVar::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isSc()) str<<" [SC]";
-    if (isPrimaryIO()) str<<(isInout()?" [PIO]":(isInput()?" [PI]":" [PO]"));
-    else {
-	if (isInout()) str<<" [IO]";
-	else if (isInput()) str<<" [I]";
-	else if (isOutput()) str<<" [O]";
-    }
+    if (isPrimaryIO()) str<<(isInoutish()?" [PIO]":(isWritable()?" [PO]":" [PI]"));
+    if (isIO()) str<<" "<<direction().ascii();
     if (isConst()) str<<" [CONST]";
     if (isPullup()) str<<" [PULLUP]";
     if (isPulldown()) str<<" [PULLDOWN]";
@@ -1096,7 +1102,7 @@ void AstParseRef::dump(std::ostream& str) {
 }
 void AstPackageRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (packagep()) { packagep()->dump(str); }
     else { str<<"UNLINKED"; }
@@ -1112,7 +1118,7 @@ void AstActive::dump(std::ostream& str) {
 }
 void AstNodeFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (dotted()!="") { str<<".="<<dotted()<<" "; }
     if (taskp()) { taskp()->dump(str); }

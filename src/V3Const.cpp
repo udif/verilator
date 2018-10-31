@@ -26,11 +26,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3String.h"
@@ -38,6 +33,10 @@
 #include "V3Ast.h"
 #include "V3Width.h"
 #include "V3Simulate.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Utilities
@@ -243,13 +242,15 @@ private:
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const)
                 && !VN_CAST_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && VN_CAST_CONST(nodep->rhsp(), Const)->toUInt() >= (uint32_t)(nodep->width())
+                && (VN_CAST_CONST(nodep->rhsp(), Const)->toUInt()
+                    >= static_cast<uint32_t>(nodep->width()))
 		&& isTPure(nodep->lhsp()));
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const)
                 && !VN_CAST_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && VN_CAST_CONST(nodep->rhsp(), Const)->toUInt() >= (uint32_t)(nodep->lhsp()->width())
+                && (VN_CAST_CONST(nodep->rhsp(), Const)->toUInt()
+                    >= static_cast<uint32_t>(nodep->lhsp()->width()))
 		&& isTPure(nodep->lhsp()));
     }
     bool operandIsTwo(const AstNode* nodep) {
@@ -295,14 +296,14 @@ private:
         return (VN_IS(nodep->rhsp(), Const)
                 && VN_IS(nodep->fromp(), NodeVarRef)
                 && !VN_CAST_CONST(nodep->fromp(), NodeVarRef)->lvalue()
-                && ((int)(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
+                && (static_cast<int>(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
                     >= VN_CAST(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
     bool operandSelFull(const AstSel* nodep) {
         return (VN_IS(nodep->lsbp(), Const)
                 && VN_IS(nodep->widthp(), Const)
 		&& nodep->lsbConst()==0
-		&& (int)nodep->widthConst()==nodep->fromp()->width());
+                && static_cast<int>(nodep->widthConst()) == nodep->fromp()->width());
     }
     bool operandSelExtend(AstSel* nodep) {
 	// A pattern created by []'s after offsets have been removed
@@ -314,7 +315,7 @@ private:
               && VN_IS(nodep->lsbp(), Const)
               && VN_IS(nodep->widthp(), Const)
 	      && nodep->lsbConst()==0
-	      && (int)nodep->widthConst()==extendp->lhsp()->width()
+              && static_cast<int>(nodep->widthConst()) == extendp->lhsp()->width()
 		)) return false;
 	replaceWChild(nodep, extendp->lhsp()); VL_DANGLING(nodep);
 	return true;
@@ -513,8 +514,7 @@ private:
         const AstConst* rwidth = VN_CAST_CONST(rhsp->widthp(), Const);
 	if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
 	int rend = (rstart->toSInt() + rwidth->toSInt());
-	if (rend == lstart->toSInt()) return true;
-	return false;
+        return (rend == lstart->toSInt());
     }
     bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
 	// called by concatmergeable to determine if {lhsp, rhsp} make sense
@@ -1185,7 +1185,8 @@ private:
         if (!VN_IS(VN_CAST_CONST(nodep, And)->rhsp(), ShiftR)) return false;
         const AstShiftR* shiftp = VN_CAST(VN_CAST_CONST(nodep, And)->rhsp(), ShiftR);
         if (!VN_IS(shiftp->rhsp(), Const)) return false;
-        if ((uint32_t)(nodep->width()) <= VN_CAST_CONST(shiftp->rhsp(), Const)->toUInt()) return false;
+        if (static_cast<uint32_t>(nodep->width())
+            <= VN_CAST_CONST(shiftp->rhsp(), Const)->toUInt()) return false;
 	return true;
     }
     void replaceBoolShift(AstNode* nodep) {
@@ -1367,7 +1368,7 @@ private:
         AstConcat* conp = VN_CAST(nodep->fromp(), Concat);
 	AstNode* conLhsp = conp->lhsp();
 	AstNode* conRhsp = conp->rhsp();
-	if ((int)nodep->lsbConst() >= conRhsp->width()) {
+        if (static_cast<int>(nodep->lsbConst()) >= conRhsp->width()) {
 	    conLhsp->unlinkFrBack();
 	    AstSel* newp = new AstSel(nodep->fileline(),
 				      conLhsp,
@@ -1375,7 +1376,7 @@ private:
 				      nodep->widthConst());
 	    nodep->replaceWith(newp);
 	}
-	else if ((int)nodep->msbConst() < conRhsp->width()) {
+        else if (static_cast<int>(nodep->msbConst()) < conRhsp->width()) {
 	    conRhsp->unlinkFrBack();
 	    AstSel* newp = new AstSel(nodep->fileline(),
 				      conRhsp,
@@ -1537,14 +1538,15 @@ private:
 		&& ((!m_params // Can reduce constant wires into equations
 		     && m_doNConst
 		     && v3Global.opt.oConst()
-		     && !(nodep->varp()->isFuncLocal() // Default value, not a "known" constant for this usage
-			  && nodep->varp()->isInput())
-		     && !nodep->varp()->noSubst()
+                     // Default value, not a "known" constant for this usage
+                     && !(nodep->varp()->isFuncLocal()
+                          && nodep->varp()->isNonOutput())
+                     && !nodep->varp()->noSubst()
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
 		if (operandConst(valuep)) {
                     const V3Number& num = VN_CAST(valuep, Const)->num();
-		    //UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+                    //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
 		    replaceNum(nodep, num); VL_DANGLING(nodep);
 		    did=true;
 		}
@@ -1566,7 +1568,7 @@ private:
 		    }
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_CAST(itemp, Const)->num();
-			//UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+                        //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
 			replaceNum(nodep, num); VL_DANGLING(nodep);
 			did=true;
 		    }

@@ -27,19 +27,19 @@
 //
 //	This transformation honors outputSplitCFuncs.
 //*************************************************************************
+
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
-#include <map>
-#include <vector>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3EmitCBase.h"
 #include "V3CCtors.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 class V3CCtorsVisitor {
 private:
@@ -114,7 +114,7 @@ void V3CCtors::evalAsserts() {
     modp->addStmtp(funcp);
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* varp = VN_CAST(np, Var)) {
-	    if (varp->isPrimaryIn() && !varp->isSc()) {
+            if (varp->isPrimaryInish() && !varp->isSc()) {
                 if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
 		    int storedWidth = basicp->widthAlignBytes() * 8;
 		    int lastWordWidth = varp->width() % storedWidth;
