@@ -126,10 +126,14 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 		AstVar* varp = oldvarp->cloneTree(false);
 		newmodp->addStmtp(varp);
 		varp->sigPublic(true);	// User needs to be able to get to it...
-		if (oldvarp->isIO()) {
-		    oldvarp->primaryIO(true);
-		    varp->primaryIO(true);
-		}
+                if (oldvarp->isIO()) {
+                    oldvarp->primaryIO(false);
+                    varp->primaryIO(true);
+                }
+                if (varp->direction().isRefOrConstRef()) {
+                    varp->v3error("Unsupported: ref/const ref as primary input/output: "
+                                  <<varp->prettyName());
+                }
 		if (varp->isIO() && v3Global.opt.systemC()) {
 		    varp->sc(true);
 		    // User can see trace one level down from the wrapper
@@ -138,9 +142,9 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 		}
 
 		AstPin* pinp = new AstPin(oldvarp->fileline(),0,oldvarp->name(),
-					  new AstVarRef(varp->fileline(),
-							varp, oldvarp->isOutput()));
-		// Skip length and width comp; we know it's a direct assignment
+                                          new AstVarRef(varp->fileline(),
+                                                        varp, oldvarp->isWritable()));
+                // Skip length and width comp; we know it's a direct assignment
 		pinp->modVarp(oldvarp);
 		cellp->addPinsp(pinp);
 	    }
