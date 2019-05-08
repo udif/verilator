@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#if defined(WIN32) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
 
@@ -163,6 +163,21 @@ string V3Os::filenameRealPath(const string& filename) {
 
 bool V3Os::filenameIsRel(const string& filename) {
     return (filename.length()>0 && filename[0] != '/');
+}
+
+//######################################################################
+// File utilities
+
+string V3Os::getline(std::istream& is, char delim) {
+    string line;
+#if defined(__CYGWIN__)  // Work around buggy implementation of getline
+    char buf[65536];
+    is.getline(buf, 65535, delim);
+    line = buf;
+#else
+    std::getline(is, line, delim);
+#endif
+    return line;
 }
 
 //######################################################################

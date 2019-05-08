@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -153,18 +153,16 @@ V3Number::V3Number(FileLine* fileline, const char* sourcep) {
 		got_01 = 1;
 		break;
 	    }
-	    case 'z': case '?': {
-		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		setAllBitsZ();
-		got_z = 1;
-		break;
-	    }
-	    case 'x': {
-		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		got_x = 1;
-		setAllBitsX();
-		break;
-	    }
+            case 'z': case '?': {
+                got_z = 1;
+                setAllBitsZ();
+                break;
+            }
+            case 'x': {
+                got_x = 1;
+                setAllBitsX();
+                break;
+            }
 	    case '_': break;
 	    default: {
 		m_fileline->v3error("Illegal character in decimal constant: "<<*cp);
@@ -177,10 +175,9 @@ V3Number::V3Number(FileLine* fileline, const char* sourcep) {
     }
     else {
 	// Convert bin/octal number to hex
-	for (const char* cp=value_startp+strlen(value_startp)-1;
-	     (cp>=value_startp
-	      && obit<=width());
-	     cp--) {
+        for (const char* cp=value_startp+strlen(value_startp)-1;
+             cp >= value_startp;
+             cp--) {
 	    if (*cp!='_' && *cp!='0' && obit>=width()) {
 		m_fileline->v3error("Too many digits for "<<width()<<" bit number: "<<sourcep);
 		break;
@@ -1659,8 +1656,20 @@ V3Number& V3Number::opAssign(const V3Number& lhs) {
 V3Number& V3Number::opExtendS(const V3Number& lhs, uint32_t lbits) {
     // Note may be a width change during the sign extension
     setZero();
-    for(int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIsExtend(bit, lbits));
+    for (int bit=0; bit < width(); bit++) {
+        char extendWith = lhs.bitIsExtend(bit, lbits);
+        setBit(bit, extendWith);
+    }
+    return *this;
+}
+
+V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
+    // Note may be a width change during the X/Z extension
+    setZero();
+    for (int bit=0; bit < width(); bit++) {
+        char extendWith = lhs.bitIsExtend(bit, lbits);
+        if (extendWith == '1' || extendWith == 1) extendWith = 0;
+        setBit(bit, lhs.bitIsExtend(bit, lbits));
     }
     return *this;
 }

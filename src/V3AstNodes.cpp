@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -200,6 +200,8 @@ string AstVar::verilogKwd() const {
         return "wire";
     } else if (varType()==AstVarType::WREAL) {
         return "wreal";
+    } else if (varType()==AstVarType::IFACEREF) {
+        return "ifaceref";
     } else {
         return dtypep()->name();
     }
@@ -556,19 +558,20 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
+AstNode* AstArraySel::baseFromp(AstNode* nodep) {  ///< What is the base variable (or const) this dereferences?
     // Else AstArraySel etc; search for the base
     while (nodep) {
-        if (VN_IS(nodep, ArraySel)) { nodep=VN_CAST(nodep, ArraySel)->fromp(); continue; }
-        else if (VN_IS(nodep, Sel)) { nodep=VN_CAST(nodep, Sel)->fromp(); continue; }
-	// AstNodeSelPre stashes the associated variable under an ATTROF of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) { nodep=VN_CAST(nodep, AttrOf)->fromp(); continue; }
+        if (VN_IS(nodep, ArraySel)) { nodep = VN_CAST(nodep, ArraySel)->fromp(); continue; }
+        else if (VN_IS(nodep, Sel)) { nodep = VN_CAST(nodep, Sel)->fromp(); continue; }
+        // AstNodeSelPre stashes the associated variable under an ATTROF
+        // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
+        else if (VN_IS(nodep, AttrOf)) { nodep = VN_CAST(nodep, AttrOf)->fromp(); continue; }
         else if (VN_IS(nodep, NodePreSel)) {
             if (VN_CAST(nodep, NodePreSel)->attrp()) {
-                nodep=VN_CAST(nodep, NodePreSel)->attrp();
-	    } else {
-                nodep=VN_CAST(nodep, NodePreSel)->lhsp();
-	    }
+                nodep = VN_CAST(nodep, NodePreSel)->attrp();
+            } else {
+                nodep = VN_CAST(nodep, NodePreSel)->lhsp();
+            }
 	    continue;
 	}
 	else break;
@@ -759,7 +762,7 @@ void AstNode::addBeforeStmt(AstNode* newp, AstNode*) {
     this->backp()->addBeforeStmt(newp, this);
 }
 void AstNode::addNextStmt(AstNode* newp, AstNode*) {
-    if (!backp()) newp->v3fatalSrc("Can't find current statement to addBeforeStmt");
+    if (!backp()) newp->v3fatalSrc("Can't find current statement to addNextStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addNextStmt(newp, this);
 }
@@ -927,8 +930,15 @@ void AstRange::dump(std::ostream& str) {
     if (littleEndian()) str<<" [LITTLE]";
 }
 void AstRefDType::dump(std::ostream& str) {
+    static bool s_recursing = false;
     this->AstNodeDType::dump(str);
-    if (defp()) { str<<" -> "; defp()->dump(str); }
+    if (defp()) {
+        if (!s_recursing) {  // Prevent infinite dump if circular typedefs
+            s_recursing = true;
+            str<<" -> "; defp()->dump(str);
+            s_recursing = false;
+        }
+    }
     else { str<<" -> UNLINKED"; }
 }
 void AstNodeClassDType::dump(std::ostream& str) {
@@ -1188,6 +1198,8 @@ void AstCFunc::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";
+    if (isStatic().unknown()) str<<" [STATICU]";
+    else if (isStatic().trueU()) str<<" [STATIC]";
     if (dpiImport()) str<<" [DPII]";
     if (dpiExport()) str<<" [DPIX]";
     if (dpiExportWrapper()) str<<" [DPIXWR]";

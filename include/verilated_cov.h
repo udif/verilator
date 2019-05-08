@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2018 by Wilson Snyder.  This program is free software;
+// Copyright 2001-2019 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -44,31 +44,31 @@
 /// The value may be a string, or another type which will be auto-converted to a string.
 ///
 /// Some typical keys:
-///	filename	File the recording occurs in.  Defaults to __FILE__
-///	lineno		Line number the recording occurs in.  Defaults to __LINE__
-///	column		Column number (or occurrence# for dup file/lines).  Defaults to undef.
-///	hier		Hierarchical name.  Defaults to name()
-///	type		Type of coverage.  Defaults to "user"
-///			Other types are 'block', 'fsm', 'toggle'.
-///	comment		Description of the coverage event.  Should be set by the user.
-///			Comments for type==block: 'if', 'else', 'elsif', 'case'
-///	thresh		Threshold to consider fully covered.
-///			If unspecified, downstream tools will determine it.
+///     filename        File the recording occurs in.  Defaults to __FILE__
+///     lineno          Line number the recording occurs in.  Defaults to __LINE__
+///     column          Column number (or occurrence# for dup file/lines).  Defaults to undef.
+///     hier            Hierarchical name.  Defaults to name()
+///     type            Type of coverage.  Defaults to "user"
+///                     Other types are 'block', 'fsm', 'toggle'.
+///     comment         Description of the coverage event.  Should be set by the user.
+///                     Comments for type==block: 'if', 'else', 'elsif', 'case'
+///     thresh          Threshold to consider fully covered.
+///                     If unspecified, downstream tools will determine it.
 ///
 /// Examples:
 ///
-///	vluint32_t m_cases[10];
-///	constructor {
-///	    for (int i=0; i<10; ++i) { m_cases[i]=0; }
+///     vluint32_t m_cases[10];
+///     constructor {
+///         for (int i=0; i<10; ++i) { m_cases[i]=0; }
 ///     }
-///	for (int i=0; i<10; ++i) {
-///		VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
-///	}
+///     for (int i=0; i<10; ++i) {
+///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
+///     }
 
 #define VL_COVER_INSERT(countp,args...) \
-    VL_IF_COVER(VerilatedCov::_inserti(countp);	\
-		VerilatedCov::_insertf(__FILE__,__LINE__);	\
-		VerilatedCov::_insertp("hier", name(), args))
+    VL_IF_COVER(VerilatedCov::_inserti(countp); \
+                VerilatedCov::_insertf(__FILE__,__LINE__);      \
+                VerilatedCov::_insertp("hier", name(), args))
 
 //=============================================================================
 /// Convert VL_COVER_INSERT value arguments to strings
@@ -106,8 +106,8 @@ public:
     // much slower (nearly 2x) than having smaller versions also.  However
     // there's not much more gain in having a version for each number of args.
 #define K(n) const char* key ## n
-#define A(n) const char* key ## n, const char* valp ## n	// Argument list
-#define D(n) const char* key ## n = NULL, const char* valp ## n = NULL	// Argument list
+#define A(n) const char* key ## n, const char* valp ## n  // Argument list
+#define D(n) const char* key ## n = NULL, const char* valp ## n = NULL  // Argument list
     static void _insertp(D(0),D(1),D(2),D(3),D(4),D(5),D(6),D(7),D(8),D(9));
     static void _insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)
                          ,A(10),D(11),D(12),D(13),D(14),D(15),D(16),D(17),D(18),D(19));
@@ -129,4 +129,4 @@ public:
     static void zero() VL_MT_SAFE;
 };
 
-#endif // guard
+#endif  // Guard

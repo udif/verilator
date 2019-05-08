@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,6 +45,9 @@ public:
     static string filenameSubstitute(const string& filename);  ///< Return filename with env vars removed
     static string filenameRealPath(const string& filename);  ///< Return realpath of filename
     static bool filenameIsRel(const string& filename);  ///< True if relative
+
+    // METHODS (file utilities)
+    static string getline(std::istream& is, char delim='\n');
 
     // METHODS (directory utilities)
     static void createDir(const string& dirname);

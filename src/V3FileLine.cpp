@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -235,14 +235,11 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
 }
 
 void FileLine::v3errorEnd(std::ostringstream& str) {
-    if (m_lineno) {
-        std::ostringstream nsstr;
-	nsstr<<this<<str.str();
-	if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
-	V3Error::v3errorEnd(nsstr);
-    } else {
-	V3Error::v3errorEnd(str);
-    }
+    std::ostringstream nsstr;
+    if (m_lineno) nsstr<<this;
+    nsstr<<str.str();
+    if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
+    V3Error::v3errorEnd(nsstr);
 }
 
 string FileLine::warnMore() const {

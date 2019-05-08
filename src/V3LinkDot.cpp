@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -867,11 +867,11 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    if (nodep->fvarp()
                 && !VN_IS(nodep->fvarp(), Var)) {
                 AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
-		// If unspecified, function returns one bit; however when we support NEW() it could
-		// also return the class reference.
-		if (dtypep) dtypep->unlinkFrBack();
-		else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
-                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::WIRE, nodep->name(),
+                // If unspecified, function returns one bit; however when we support NEW() it could
+                // also return the class reference.
+                if (dtypep) dtypep->unlinkFrBack();
+                else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
+                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::VAR, nodep->name(),
                                              VFlagChildDType(), dtypep);  // Not dtype resolved yet
                 newvarp->direction(VDirection::OUTPUT);
 		newvarp->funcReturn(true);
@@ -1020,7 +1020,11 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstPackageImport* nodep) {
 	UINFO(4,"  Link: "<<nodep<<endl);
 	VSymEnt* srcp = m_statep->getNodeSym(nodep->packagep());
-	if (nodep->name()!="*") {
+        if (nodep->name()=="*") {
+            if (m_curSymp == m_statep->dunitEntp()) {
+                nodep->v3warn(IMPORTSTAR,"Import::* in $unit scope may pollute global namespace");
+            }
+        } else {
 	    VSymEnt* impp = srcp->findIdFlat(nodep->name());
 	    if (!impp) {
 		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());

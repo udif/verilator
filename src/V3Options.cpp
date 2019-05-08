@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -699,13 +699,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-stats-vars", flag/*ref*/) )	{ m_statsVars = flag; m_stats |= flag; }
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
             else if ( onoff   (sw, "-threads-coarsen", flag/*ref*/))    { m_threadsCoarsen = flag; }  // Undocumented, debug
-	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
-            else if ( onoff   (sw, "-trace-fst", flag/*ref*/) )         { m_trace = flag; m_traceFormat = TraceFormat::FST; addLdLibs("-lz"); }
-            else if ( onoff   (sw, "-trace-lxt2", flag/*ref*/) )        {
-                std::cerr<<"-Note: --trace-lxt2 format is deprecated, please use --trace-fst.\n";
-                m_trace = flag; m_traceFormat = TraceFormat::LXT2; addLdLibs("-lz"); }
-	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
-	    else if ( onoff   (sw, "-trace-params", flag/*ref*/) )	{ m_traceParams = flag; }
+            else if ( onoff   (sw, "-trace", flag/*ref*/) )             { m_trace = flag; }
+            else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )        { m_traceDups = flag; }
+            else if ( onoff   (sw, "-trace-params", flag/*ref*/) )      { m_traceParams = flag; }
 	    else if ( onoff   (sw, "-trace-structs", flag/*ref*/) )	{ m_traceStructs = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
@@ -872,6 +868,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		m_outputSplitCTrace = atoi(argv[i]);
 	    }
+            else if (!strcmp(sw, "-trace-fst")) {
+                m_trace = true;
+                m_traceFormat = TraceFormat::FST;
+                addLdLibs("-lz");
+            }
+            else if (!strcmp(sw, "-trace-fst-thread")) {
+                m_trace = true;
+                m_traceFormat = TraceFormat::FST_THREAD;
+                addLdLibs("-lz");
+            }
 	    else if ( !strcmp (sw, "-trace-depth") && (i+1)<argc ) {
 		shift;
 		m_traceDepth = atoi(argv[i]);
@@ -1113,10 +1119,9 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string whole_file;
     bool inCmt = false;
     while (!ifp->eof()) {
-	string line;
-	getline(*ifp, line);
-	// Strip simple comments
-	string oline;
+        string line = V3Os::getline(*ifp);
+        // Strip simple comments
+        string oline;
 	// cppcheck-suppress StlMissingComparison
 	for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
 	    if (inCmt) {
@@ -1207,7 +1212,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout <<endl;
-    cout << "Copyright 2003-2018 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

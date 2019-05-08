@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1043,12 +1043,24 @@ private:
 	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstRefDType* nodep) {
-	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-	userIterateChildren(nodep, NULL);
-	if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
-	nodep->dtypeFrom(nodep->dtypeSkipRefp());
-	nodep->widthFromSub(nodep->subDTypep());
-	UINFO(4,"dtWidthed "<<nodep<<endl);
+        if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
+            nodep->v3error("Typedef's type is circular: "<<nodep->prettyName());
+            nodep->dtypeSetLogicBool();
+            nodep->doingWidth(false);
+            return;
+        }
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        nodep->doingWidth(true);
+        userIterateChildren(nodep, NULL);
+        if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
+        // But might be recursive, so instead manually recurse into the referenced type
+        if (!nodep->defp()) nodep->v3fatalSrc("Unlinked");
+        nodep->dtypeFrom(nodep->defp());
+        userIterate(nodep->defp(), NULL);
+        nodep->widthFromSub(nodep->subDTypep());
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+        nodep->doingWidth(false);
     }
     virtual void visit(AstTypedef* nodep) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
@@ -1147,7 +1159,7 @@ private:
 		// We ignore warnings as that is sort of the point of a cast
 		iterateCheck(nodep,"Cast expr",nodep->lhsp(),CONTEXT,FINAL,calcDtp,EXTEND_EXP, false);
 	    }
-	    if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
+	    //if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
 	    // Next step, make the proper output width
 	    {
                 AstNodeDType* outDtp = (underDtp->isFourstate()
@@ -1756,32 +1768,39 @@ private:
 		    AstMemberDType* memp = classp->membersp();
                     AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
 		    for (; memp || patp; ) {
-			if (patp) {
-			    if (patp->keyp()) {
-                                if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
-				    memp = classp->findMember(textp->text());
-				    if (!memp) {
-					patp->keyp()->v3error("Assignment pattern key '"<<textp->text()<<"' not found as member");
-					continue;
-				    }
-				} else {
-                                    patp->keyp()->v3error("Assignment pattern key not"
-                                                          " supported/understood: "<<patp->keyp()->prettyTypeName());
-				}
-			    }
-			}
-			if (memp && !patp) {
-			    // Missing init elements, warn below
-			    memp=NULL; patp=NULL; break;
-			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
-			    memp=NULL; patp=NULL; break;
-			} else {
-                            std::pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
-			    if (!ret.second) {
-                                patp->v3error("Assignment pattern contains duplicate entry: "
-                                              << VN_CAST(patp->keyp(), Text)->text());
-			    }
-			}
+                        do {
+                            if (patp) {
+                                if (patp->keyp()) {
+                                    if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
+                                        memp = classp->findMember(textp->text());
+                                        if (!memp) {
+                                            patp->keyp()->v3error(
+                                                "Assignment pattern key '"
+                                                <<textp->text()<<"' not found as member");
+                                            break;
+                                        }
+                                    } else {
+                                        patp->keyp()->v3error(
+                                            "Assignment pattern key not supported/understood: "
+                                            <<patp->keyp()->prettyTypeName());
+                                    }
+                                }
+                            }
+                            if (memp && !patp) {
+                                // Missing init elements, warn below
+                                memp=NULL; patp=NULL; break;
+                            } else if (!memp && patp) {
+                                patp->v3error("Assignment pattern contains too many elements");
+                                memp=NULL; patp=NULL; break;
+                            } else {
+                                std::pair<PatMap::iterator, bool> ret
+                                    = patmap.insert(make_pair(memp, patp));
+                                if (!ret.second) {
+                                    patp->v3error("Assignment pattern contains duplicate entry: "
+                                                  << VN_CAST(patp->keyp(), Text)->text());
+                                }
+                            }
+                        } while(0);
 			// Next
                         if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
                         if (patp) patp = VN_CAST(patp->nextp(), PatMember);
@@ -1799,9 +1818,10 @@ private:
 			}
 			else {
                             if (!VN_IS(classp, UnionDType)) {
-				patp->v3error("Assignment pattern missed initializing elements: "<<memp->prettyTypeName());
-			    }
-			}
+                                nodep->v3error("Assignment pattern missed initializing elements: "
+                                               <<memp->prettyTypeName());
+                            }
+                        }
 		    } else {
 			patp = it->second;
 		    }
@@ -2211,6 +2231,19 @@ private:
 	    iterateCheckFileDesc(nodep,nodep->filep(),BOTH);
 	    userIterateAndNext(nodep->strgp(), WidthVP(SELF,BOTH).p());
 	}
+    }
+    virtual void visit(AstFRead* nodep) {
+        if (m_vup->prelim()) {
+            nodep->dtypeSetSigned32();  // Spec says integer return
+            userIterateAndNext(nodep->memp(), WidthVP(SELF,BOTH).p());
+            iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+            if (nodep->startp()) {
+                iterateCheckSigned32(nodep, "$fread start", nodep->startp(), BOTH);
+            }
+            if (nodep->countp()) {
+                iterateCheckSigned32(nodep, "$fread count", nodep->countp(), BOTH);
+            }
+        }
     }
     virtual void visit(AstFScanF* nodep) {
 	if (m_vup->prelim()) {
@@ -3137,8 +3170,26 @@ private:
 		nodepr = newp;
 		return true;
 	    }
-	}
-	return false; // No change
+            // X/Z also upper bit extend.  In pre-SV only to 32-bits, SV forever.
+            else if (!constp->num().sized()
+                     // Make it the proper size.  Careful of proper extension of 0's/1's
+                     && expWidth > 32 && constp->num().isMsbXZ()) {
+                constp->v3warn(WIDTH, "Unsized constant being X/Z extended to "
+                               <<expWidth<<" bits: "<<constp->prettyName());
+                V3Number num (constp->fileline(), expWidth);
+                num.opExtendXZ(constp->num(), constp->width());
+                AstNode* newp = new AstConst(constp->fileline(), num);
+                // Spec says always unsigned with proper width
+                if (debug()>4) constp->dumpTree(cout,"  fixUnszExtend_old: ");
+                if (debug()>4)   newp->dumpTree(cout,"               _new: ");
+                constp->replaceWith(newp);
+                constp->deleteTree(); VL_DANGLING(constp);
+                // Tell caller the new constp, and that we changed it.
+                nodepr = newp;
+                return true;
+            }
+        }
+        return false;  // No change
     }
 
     bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
@@ -3151,6 +3202,18 @@ private:
 	AstNodeDType* expDTypep = underp->findUInt32DType();
 	underp = iterateCheck(nodep,"file_descriptor",underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	if (underp) {} // cppcheck
+    }
+    void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to signed32 if not already. Child is self-determined
+        // underp may change as a result of replacement
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
+        }
+        if (stage & FINAL) {
+            AstNodeDType* expDTypep = nodep->findSigned32DType();
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        if (underp) {}  // cppcheck
     }
     void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	// Coerce child to real if not already. Child is self-determined

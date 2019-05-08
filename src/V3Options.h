@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,16 +41,18 @@ class TraceFormat {
 public:
     enum en {
         VCD = 0,
-        LXT2,
-        FST
+        FST,
+        FST_THREAD
     } m_e;
     inline TraceFormat(en _e = VCD) : m_e(_e) {}
     explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
+    bool fstFlavor() const { return m_e == FST || m_e == FST_THREAD; }
+    bool threaded() const { return m_e == FST_THREAD; }
     string classBase() const {
         static const char* const names[] = {
             "VerilatedVcd",
-            "VerilatedLxt2",
+            "VerilatedFst",
             "VerilatedFst"
         };
         return names[m_e];
@@ -58,7 +60,7 @@ public:
     string sourceName() const {
         static const char* const names[] = {
             "verilated_vcd",
-            "verilated_lxt2",
+            "verilated_fst",
             "verilated_fst"
         };
         return names[m_e];
@@ -164,9 +166,9 @@ class V3Options {
     int		m_pinsBv;	// main switch: --pins-bv
     int		m_threads;	// main switch: --threads (0 == --no-threads)
     int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
-    int		m_traceDepth;	// main switch: --trace-depth
-    TraceFormat m_traceFormat;  // main switch: --trace or --trace-lxt2
-    int		m_traceMaxArray;// main switch: --trace-max-array
+    int         m_traceDepth;   // main switch: --trace-depth
+    TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
+    int         m_traceMaxArray;// main switch: --trace-max-array
     int		m_traceMaxWidth;// main switch: --trace-max-width
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts

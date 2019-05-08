@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -511,7 +511,7 @@ private:
             }
         } else {
             AstNode* clrp = new AstAssign(fl, new AstVarRef(fl, m_activityVscp, true),
-                                          new AstConst(fl, V3Number(fl, m_activityVscp->width())));
+                                          new AstConst(fl, V3Number(fl, m_activityVscp->width(), 0)));
             m_fullFuncp->addFinalsp(clrp->cloneTree(true));
             m_chgFuncp->addFinalsp(clrp);
         }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -210,6 +210,11 @@ private:
             } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
 					   fromp->cloneTree(false)));
+            } else if (VN_IS(basefromp, Replicate)) {
+                // From {...}[...] syntax in IEEE 2017
+                if (basefromp) { UINFO(1,"    Related node: "<<basefromp<<endl); }
+                nodep->v3error("Unsupported: Select of concatenation");
+		nodep = NULL;
 	    } else {
 		if (basefromp) { UINFO(1,"    Related node: "<<basefromp<<endl); }
 		nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
@@ -359,6 +364,10 @@ private:
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFEof* nodep) {
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
+    }
+    virtual void visit(AstFRead* nodep) {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }

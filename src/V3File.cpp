@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -86,9 +86,10 @@ class V3FileDependImp {
 	    if (!m_stat.st_mtime) {
 		string fn = filename();
 		int err = stat(fn.c_str(), &m_stat);
-		if (err!=0) {
-		    m_stat.st_mtime = 1;
-		    // Not a error... This can occur due to `line directives in the .vpp files
+                if (err!=0) {
+                    memset(&m_stat, 0, sizeof(m_stat));
+                    m_stat.st_mtime = 1;
+                    // Not an error... This can occur due to `line directives in the .vpp files
 		    UINFO(1,"-Info: File not statable: "<<filename()<<endl);
 		}
 	    }
@@ -206,12 +207,12 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	return false;
     }
     {
-	string ignore;  getline(*ifp, ignore);
+        string ignore = V3Os::getline(*ifp);
     }
     {
-	char   chkDir;   *ifp>>chkDir;
-	char   quote;    *ifp>>quote;
-	string chkCmdline;  getline(*ifp, chkCmdline, '"');
+        char   chkDir;   *ifp>>chkDir;
+        char   quote;    *ifp>>quote;
+        string chkCmdline = V3Os::getline(*ifp, '"');
 	string cmdline = stripQuotes(cmdlineIn);
 	if (cmdline != chkCmdline) {
 	    UINFO(2,"   --check-times failed: different command line\n");
@@ -228,8 +229,8 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	time_t chkCnstime; *ifp>>chkCnstime;
 	time_t chkMstime; *ifp>>chkMstime;
 	time_t chkMnstime; *ifp>>chkMnstime;
-	char   quote;    *ifp>>quote;
-	string chkFilename; getline(*ifp, chkFilename, '"');
+        char   quote;    *ifp>>quote;
+        string chkFilename = V3Os::getline(*ifp, '"');
 
 	V3Options::fileNfsFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

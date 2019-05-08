@@ -3,7 +3,7 @@ eval 'exec perl -wS $0 ${1+"$@"}'
   if 0;
 ######################################################################
 #
-# Copyright 2003-2018 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2019 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -30,7 +30,7 @@ use IO::File;
 use Pod::Usage;
 
 use strict;
-use vars qw ($Debug @Opt_Verilator_Sw);
+use vars qw($Debug @Opt_Verilator_Sw);
 
 #######################################################################
 #######################################################################
@@ -57,18 +57,18 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config ("no_auto_abbrev","pass_through");
-if (! GetOptions (
-                  # Major operating modes
-                  "help"        => \&usage,
-                  "debug:s"     => \&debug,
-                  # "version!"  => \&version,   # Also passthru'ed
-                  # Switches
-                  "gdb!"        => \$opt_gdb,
-                  "gdbbt!"      => \$opt_gdbbt,
-                  # Additional parameters
-                  "<>"          => sub {},      # Ignored
-                  )) {
+Getopt::Long::config("no_auto_abbrev","pass_through");
+if (! GetOptions(
+          # Major operating modes
+          "help"        => \&usage,
+          "debug:s"     => \&debug,
+          # "version!"  => \&version,   # Also passthru'ed
+          # Switches
+          "gdb!"        => \$opt_gdb,
+          "gdbbt!"      => \$opt_gdbbt,
+          # Additional parameters
+          "<>"          => sub {},      # Ignored
+    )) {
     pod2usage(-exitstatus=>2, -verbose=>0);
 }
 
@@ -85,7 +85,7 @@ if ($opt_gdbbt && !gdb_works()) {
 my @quoted_sw = map {sh_escape($_)} @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
-    run (("gdb"||$ENV{VERILATOR_GDB})
+    run (($ENV{VERILATOR_GDB}||"gdb")
          ." ".verilator_bin()
          # Note, uncomment to set breakpoints before running:
          #  ." -ex 'break main'"
@@ -108,7 +108,7 @@ if ($opt_gdb) {
          ." -ex 'bt'");
 } else {
     # Normal, non gdb
-    run (verilator_bin()." ".join(' ',@quoted_sw));
+    run(verilator_bin()." ".join(' ',@quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -226,7 +226,7 @@ Verilator - Convert Verilog code to C++/SystemC
     verilator --version
     verilator --cc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --lint-only    [source_files.v]...
+    verilator --lint-only -Wall [source_files.v]...
 
 =head1 DESCRIPTION
 
@@ -361,7 +361,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-fst                 Enable FST waveform creation
-    --trace-lxt2                Enable LXT2 waveform creation
+    --trace-fst-thread          Enable FST threaded waveform creation
     --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
@@ -400,7 +400,8 @@ detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
      +verilator+prof+threads+file+I<filename>  Set profile filename
      +verilator+prof+threads+start+I<value>    Set profile starting point
      +verilator+prof+threads+window+I<value>   Set profile duration
-     +verilator+rand+reset+<value>     Set random reset technique
+     +verilator+rand+reset+I<value>    Set random reset technique
+     +verilator+seed+I<value>          Set random seed
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
@@ -417,19 +418,27 @@ Specifies the Verilog file containing the top module to be Verilated.
 
 =item {file.c/.cc/.cpp/.cxx}
 
-Specifies optional C++ files to be linked in with the Verilog code.  If any
-C++ files are specified in this way, Verilator will include a make rule
-that generates a I<module> executable.  Without any C++ files, Verilator
-will stop at the I<module>__ALL.a library, and presume you'll continue
-linking with make rules you write yourself.  See also the -CFLAGS option.
+Specifies optional C++ files to be linked in with the Verilog code.  The
+file path should either be absolute, or relative to where the make will be
+executed from, or add to your makefile's VPATH the appropriate directory to
+find the file.
+
+If any C++ files are specified in this way, Verilator will include a make
+rule that generates a I<module> executable.  Without any C++ files,
+Verilator will stop at the I<module>__ALL.a library, and presume you'll
+continue linking with make rules you write yourself.  See also the -CFLAGS
+option.
 
 =item {file.a/.o/.so}
 
 Specifies optional object or library files to be linked in with the Verilog
-code, as a shorthand for -LDFLAGS "<file>".  If any files are specified in
-this way, Verilator will include a make rule that uses these files when
-linking the I<module> executable.  This generally is only useful when used
-with the --exe option.
+code, as a shorthand for -LDFLAGS "<file>". The file path should either be
+absolute, or relative to where the make will be executed from, or add to
+your makefile's VPATH the appropriate directory to find the file.
+
+If any files are specified in this way, Verilator will include a make rule
+that uses these files when linking the I<module> executable.  This
+generally is only useful when used with the --exe option.
 
 =item +1364-1995ext+I<ext>
 
@@ -872,7 +881,7 @@ change the SystemC modules instantiated.
 Tune the inlining of modules.  The default value of 2000 specifies that up
 to 2000 new operations may be added to the model by inlining, if more than
 this number of operations would result, the module is not inlined.  Larger
-values, or a value <= 1 will inline everything, will lead to longer compile
+values, or a value < 1 will inline everything, will lead to longer compile
 times, but potentially faster runtimes.  This setting is ignored for very
 small modules; they will always be inlined, if allowed.
 
@@ -1269,7 +1278,7 @@ designs with only one top.
 =item --trace
 
 Adds waveform tracing code to the model using VCD format. This overrides
-C<--trace-fst> and C<--trace-lxt2>.
+C<--trace-fst>.
 
 Verilator will generate additional {prefix}__Trace*.cpp files that will
 need to be compiled.  In addition verilated_vcd_sc.cpp (for SystemC traces)
@@ -1283,13 +1292,14 @@ even when waveforms are not turned on during model execution.
 
 =item --trace-fst
 
-Enable FST waveform tracing in the model. This overrides C<--trace> and C<--trace-lxt2>.
+Enable FST waveform tracing in the model. This overrides C<--trace> and
+C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
 
-=item --trace-lxt2
+=item --trace-fst-thread
 
-Enable LXT2 waveform tracing in the model. This overrides C<--trace> and
-C<--trace-fst>.  This option is deprecated in favor of FST traces and may
-be removed in the near future.
+Enable FST waveform tracing in the model, using a separate thread. This is
+typically faster in runtime but slower in total computes than
+C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
 
 =item --trace-depth I<levels>
 
@@ -1414,8 +1424,8 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT -Wno-SYNCASYNCNET
--Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT
+-Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
 
 =item -Wno-fatal
 
@@ -1454,10 +1464,10 @@ Enable all code style related warning messages.  This is equivalent to
 =item --x-assign unique
 
 Controls the two-state value that is replaced when an assignment to X is
-encountered.  --x-assign=fast, the default, converts all Xs to whatever is
-best for performance.  --x-assign=0 converts all Xs to 0s, and is also fast.
---x-assign=1 converts all Xs to 1s, this is nearly as fast as 0, but more
-likely to find reset bugs as active high logic will fire.  --x-assign=unique
+encountered. C<--x-assign fast>, the default, converts all Xs to whatever is
+best for performance.  C<--x-assign 0> converts all Xs to 0s, and is also fast.
+C<--x-assign 1> converts all Xs to 1s, this is nearly as fast as 0, but more
+likely to find reset bugs as active high logic will fire.  C<--x-assign unique>
 will call a function to determine the value, this allows randomization of
 all Xs to find reset bugs and is the slowest, but safest for finding reset
 bugs in code.
@@ -1482,13 +1492,13 @@ variables are controlled with --x-initial.
 Controls the two-state value that is used to initialize variables that are
 not otherwise initialized.
 
---x-initial=0, initializes all otherwise uninitialized variables to zero.
+C<--x-initial 0>, initializes all otherwise uninitialized variables to zero.
 
---x-initial=unique, the default, initializes variables using a function,
+C<--x-initial unique>, the default, initializes variables using a function,
 which determines the value to use each initialization. This gives greatest
 flexibility and allows finding reset bugs.  See L</"Unknown states">.
 
---x-initial=fast, is best for performance, and initializes all variables to
+C<--x-initial fast>, is best for performance, and initializes all variables to
 a state Verilator determines is optimal.  This may allow further code
 optimizations, but will likely hide any code bugs relating to missing
 resets.
@@ -1598,6 +1608,11 @@ When a model was Verilated using "-x-inital unique", sets the
 initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
 Randomize.  See L</"Unknown states">.
 
+=item +verilator+seed+I<value>
+
+For $random and "-x-initial unique", set the random seed value.  If zero or
+not specified picks a value from the system random number generator.
+
 =item +verilator+V
 
 Shows the verbose version, including configuration information.
@@ -1697,7 +1712,7 @@ This is an example similar to the above, but using SystemC.
       #include "Vour.h"
       int sc_main(int argc, char **argv) {
           Verilated::commandArgs(argc, argv);
-          sc_clock clk ("clk",10, 0.5, 3, true);
+          sc_clock clk ("clk", 10, 0.5, 3, true);
           Vour* top;
           top = new Vour("top");
           top->clk(clk);
@@ -1758,8 +1773,8 @@ the examples directory in the distribution.
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 --x-assign=fast
---x-initial=fast --noassert" flags.  The -O3 flag will require longer
-compile times, and --x-assign=fast --x-initial=fast may increase the risk
+--x-initial fast --noassert" flags.  The -O3 flag will require longer
+compile times, and "--x-assign fast --x-initial fast" may increase the risk
 of reset bugs in trade for performance; see the above documentation for
 these flags.
 
@@ -2067,7 +2082,7 @@ command line, or the link), you'd then:
 
     #include "svdpi.h"
     #include "Vour__Dpi.h"
-    int add (int a, int b) { return a+b; }
+    int add(int a, int b) { return a+b; }
 
 =head2 DPI System Task/Functions
 
@@ -2117,7 +2132,7 @@ respect to that top level module, then the scope could be set with
 
     #include "svdpi.h"
     ...
-    svSetScope (svGetScopeFromName ("dut"));
+    svSetScope(svGetScopeFromName("dut"));
 
 (Remember that Verilator adds a "V" to the top of the module hierarchy.)
 
@@ -2131,7 +2146,7 @@ comments within the svdpi.h header for more information.
 Verilator allows writing $display like functions using this syntax:
 
    import "DPI-C" function void
-         \$my_display (input string formatted /*verilator sformat*/ );
+         \$my_display(input string formatted /*verilator sformat*/ );
 
 The /*verilator sformat*/ indicates that this function accepts a $display
 like format specifier followed by any number of arguments to satisfy the
@@ -2239,7 +2254,7 @@ accesses the above signal "readme" would be:
       #include "verilated_vpi.h"  // Required to get definitions
 
       vluint64_t main_time = 0;   // See comments in first example
-      double sc_time_stamp () { return main_time; }
+      double sc_time_stamp() { return main_time; }
 
       void read_and_check() {
           vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"TOP.our.readme", NULL);
@@ -2340,6 +2355,9 @@ oversubscribe the available CPU cores. Under CPU oversubscription, the
 Verilated model should not livelock nor deadlock, however, you can expect
 performance to be far worse than it would be with proper stoichiometry of
 threads and CPU cores.
+
+With --trace-fst-thread, tracing occurs in a separate thread from the main
+simulation thread(s). This option is orthogonal to --threads.
 
 The remainder of this section describe behavior with --threads 1 or
 --threads N (not --no-threads).
@@ -3017,9 +3035,10 @@ from a four state simulator.  An === comparison to X will always be false,
 so that Verilog code which checks for uninitialized logic will not fire.
 
 Assigning a variable to a X will actually assign the variable to a random
-value (see the --x-assign switch.)  Thus if the value is actually used, the
-random value should cause downstream errors.  Integers also randomize, even
-though the Verilog 2001 specification says they initialize to zero.
+value (see the --x-assign switch and +verilator+rand+reset runtime switch.)
+Thus if the value is actually used, the random value should cause
+downstream errors.  Integers also randomize, even though the Verilog 2001
+specification says they initialize to zero.
 
 All variables, depending on --x-initial setting, are typically randomly
 initialized using a function.  By running several random simulation runs
@@ -3397,7 +3416,7 @@ it's a bit slower than a non-delayed assignment.)  Here's an example
         always @ (posedge clk)
             if (~reset_l) begin
                 for (i=0; i<`ARRAY_SIZE; i++) begin
-                    array[i] = 0;        // Non-delayed for verilator
+                    array[i] = 0;  // Non-delayed for verilator
                 end
 
 This message is only seen on large or complicated loops because Verilator
@@ -3455,15 +3474,6 @@ instead intended is to use a casez with C<?>.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
-=item COLONPLUS
-
-Warns that a :+ is seen. Likely the intent was to use +: to select a range
-of bits. If the intent was a range that is explicitly positive, suggest
-adding a space, e.g. use ": +".
-
-Ignoring this warning will only suppress the lint check, it will simulate
-correctly.
-
 =item CDCRSTLOGIC
 
 With --cdc only, warns that asynchronous flop reset terms come from other
@@ -3488,6 +3498,15 @@ For example "X > 1" will always be true when X is a single bit wide.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
+=item COLONPLUS
+
+Warns that a :+ is seen. Likely the intent was to use +: to select a range
+of bits. If the intent was a range that is explicitly positive, suggest
+adding a space, e.g. use ": +".
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item COMBDLY
 
 Warns that you have a delayed assignment inside of a combinatorial block.
@@ -3499,6 +3518,18 @@ L<http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item CONTASSREG
+
+Error that a continuous assignment is setting a reg. According to IEEE
+Verilog, but not SystemVerilog, a wire must be used as the target of
+continuous assignments.
+
+This error is only reported when "--language 1364-1995", "--language
+1364-2001", or "--language 1364-2005" is used.
+
+Ignoring this error will only suppress the lint check, it will simulate
+correctly.
 
 =item DECLFILENAME
 
@@ -3560,6 +3591,19 @@ code to a case statement, or a SystemVerilog 'unique if' or 'priority if'.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item IGNOREDRETURN
+
+Warns that a non-void function is being called as a task, and hence the
+return value is being ignored.
+
+This warning is required by IEEE. The portable way to suppress this warning
+(in SystemVerilog) is to use a void cast, e.g.
+
+    void'(function_being_called_as_task());
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item IMPERFECTSCH
 
 Warns that the scheduling of the model is not absolutely perfect, and some
@@ -3577,6 +3621,16 @@ nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
 Emacs, available from L<http://www.veripool.org/>
 
 Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item IMPORTSTAR
+
+Warns that an "import I<package>::*" statement is in $unit scope. This
+causes the imported symbols to polute the global namespace, defeating much
+of the purpose of having a package. Generally "import ::*" should only be
+used inside a lower scope such as a package or module.
+
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item IMPURE
@@ -3693,6 +3747,11 @@ signal.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item PROCASSWIRE
+
+Error that a procedural assignment is setting a wire. According to IEEE, a
+var/reg must be used as the target of procedural assignments.
+
 =item REALCVT
 
 Warns that a real number is being implicitly rounded to an integer, with
@@ -3769,7 +3828,7 @@ expression as the next statement.  For example:
 
       task foo; output sig; ... endtask
       always @* begin
-           foo(bus_we_select_from[2]);   // Will get TASKNSVAR error
+           foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
       end
 
 Change this to:
@@ -3835,7 +3894,7 @@ Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
 synthesis which analyzes interconnection per-bit, but is circular to
 simulation which analyzes per-bus:
 
-      wire [2:0] x = {x[1:0],shift_in};
+      wire [2:0] x = {x[1:0], shift_in};
 
 This statement needs to be evaluated multiple times, as a change in
 "shift_in" requires "x" to be computed 3 times before it becomes stable.
@@ -3844,12 +3903,12 @@ causes the warning.
 
 For significantly better performance, split this into 2 separate signals:
 
-      wire [2:0] xout = {x[1:0],shift_in};
+      wire [2:0] xout = {x[1:0], shift_in};
 
 and change all receiving logic to instead receive "xout".  Alternatively,
 change it to
 
-      wire [2:0] x = {xin[1:0],shift_in};
+      wire [2:0] x = {xin[1:0], shift_in};
 
 and change all driving logic to instead drive "xin".
 
@@ -3965,7 +4024,7 @@ Concatenate leading zeros when doing arithmetic.  In the statement
 
 The best fix, which clarifies intent and will also make all tools happy is:
 
-        wire [5:0] plus_one = from[5:0] + 6'd1 + {5'd0,carry[0]};
+        wire [5:0] plus_one = from[5:0] + 6'd1 + {5'd0, carry[0]};
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -3977,12 +4036,12 @@ has an indeterminate width.  In most cases this violates the Verilog rule
 that widths inside concatenates and replicates must be sized, and should be
 fixed in the code.
 
-    wire [63:0] concat = {1,2};
+    wire [63:0] concat = {1, 2};
 
 An example where this is technically legal (though still bad form) is:
 
     parameter PAR = 1;
-    wire [63:0] concat = {PAR,PAR};
+    wire [63:0] concat = {PAR, PAR};
 
 The correct fix is to either size the 1 ("32'h1"), or add the width to the
 parameter definition ("parameter [31:0]"), or add the width to the
@@ -4137,12 +4196,12 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdC* tfp = new VerilatedVcdC;
-        topp->trace (tfp, 99);
-        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
+        tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
             main_time += #;
-            tfp->dump (main_time);
+            tfp->dump(main_time);
         }
         tfp->close();
     }
@@ -4173,8 +4232,8 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdSc* tfp = new VerilatedVcdSc;
-        topp->trace (tfp, 99);
-        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
+        tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         sc_start(1);
         ...
@@ -4185,7 +4244,8 @@ trace file if you want all data to land in the same output file.
 
 FST a format by GTKWave.
 This version provides a basic FST support.
-To dump FST format, add the --trace switch to Verilator and change the include path in the testbench to:
+To dump FST format, add the --trace-fst switch to Verilator and change the include
+path in the testbench to:
 
     #include "verilated_fst_c.h"
     VerilatedFstC* tfp = new VerilatedFstC;
@@ -4198,29 +4258,12 @@ but such requirement could be rare.
 The FST library from GTKWave does not currently support SystemC; use VCD
 format instead.
 
-=item How do I generate LXT2 waveforms (traces) in C++?
-
-LXT2 a format by GTKWave, which is usually 10x smaller than VCD format.
-This version provides a basic LXT2 support.
-To dump LXT2 format, add the --trace switch to Verilator and change the include path in the testbench to:
-
-    #include "verilated_lxt2_c.h"
-    VerilatedLxt2C* tfp = new VerilatedLxt2C;
-
-Note that currently supporting both LXT2 and VCD in a single simulation is impossible,
-but such requirement could be rare.
-
-=item How do I generate LXT2 waveforms (traces) in SystemC?
-
-The LXT2 library from GTKWave does not currently support SystemC; use VCD
-format instead.
-
 =item How do I view waveforms (traces)?
 
-Verilator makes standard VCD (Value Change Dump), LXT2 and FST files.  VCD files are viewable
+Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
 with the public domain GTKWave (recommended) or Dinotrace (legacy)
 programs, or any of the many commercial offerings;
-LXT2 and FST are supported by GTKWave only.
+FST is supported by GTKWave only.
 
 =item How do I reduce the size of large waveform (trace) files?
 
@@ -4584,7 +4627,7 @@ remain anonymous.
 
 The latest version is available from L<http://www.veripool.org/>.
 
-Copyright 2003-2018 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

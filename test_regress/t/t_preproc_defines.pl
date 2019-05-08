@@ -11,15 +11,17 @@ scenarios(vlt => 1);
 
 top_filename("t/t_preproc.v");
 
-$Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
     verilator_flags2 => ['-DDEF_A0 -DPREDEF_COMMAND_LINE -E --dump-defines'],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     stdout_filename => $stdout_filename,
     );
 
-ok(files_identical($stdout_filename, $Self->{golden_out}));
+files_identical($stdout_filename, $Self->{golden_filename});
 
+ok(1);
 1;

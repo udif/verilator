@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -26,7 +26,7 @@
 
 
 #ifndef _VERILATED_DPI_H_
-#define _VERILATED_DPI_H_ 1 ///< Header Guard
+#define _VERILATED_DPI_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller
@@ -80,4 +80,4 @@ static inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, QData ld) VL_MT_SAFE {
 
 //======================================================================
 
-#endif // _VERILATED_DPI_H_
+#endif  // Guard

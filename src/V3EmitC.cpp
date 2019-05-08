@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -386,6 +386,45 @@ public:
             iterateAndNextNull(nodep->filep());
 	    puts(")); }\n");
 	}
+    }
+    virtual void visit(AstFRead* nodep) {
+        puts("VL_FREAD_I(");
+        puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
+        putbs(",");
+        bool memory = false;
+        uint32_t array_lsb = 0;
+        uint32_t array_size = 0;
+        {
+            const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
+            if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
+            else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) { }
+            else if (const AstUnpackArrayDType* adtypep
+                     = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
+                memory = true;
+                array_lsb = adtypep->lsb();
+                array_size = adtypep->elementsConst();
+            }
+            else {
+                nodep->v3error(nodep->verilogKwd()
+                               << " loading other than unpacked-array variable");
+            }
+        }
+        puts(cvtToStr(array_lsb));
+        putbs(",");
+        puts(cvtToStr(array_size));
+        putbs(", ");
+        if (!memory) puts("&(");
+        iterateAndNextNull(nodep->memp());
+        if (!memory) puts(")");
+        putbs(", ");
+        iterateAndNextNull(nodep->filep());
+        putbs(", ");
+        if (nodep->startp()) iterateAndNextNull(nodep->startp());
+        else puts(cvtToStr(array_lsb));
+        putbs(", ");
+        if (nodep->countp()) iterateAndNextNull(nodep->countp());
+        else puts(cvtToStr(array_size));
+        puts(");\n");
     }
     virtual void visit(AstSysFuncAsTask* nodep) {
         if (!nodep->lhsp()->isWide()) puts("(void)");
@@ -2325,9 +2364,9 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
         const AstCFunc* funcp = *it;
 	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
 	    ofp()->putsPrivate(funcp->declPrivate());
-	    if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
-	    if (funcp->isStatic()) puts("static ");
-	    puts(funcp->rtnTypeVoid()); puts(" ");
+            if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
+            if (funcp->isStatic().trueU()) puts("static ");
+            puts(funcp->rtnTypeVoid()); puts(" ");
 	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
 	    if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
 	}
@@ -2730,10 +2769,11 @@ class EmitCTrace : EmitCStmts {
 
     // METHODS
     void newOutCFile(int filenum) {
-	string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
-			   + (m_slow?"__Trace__Slow":"__Trace"));
-	if (filenum) filename += "__"+cvtToStr(filenum);
-	filename += ".cpp";
+        string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
+                           +"__Trace");
+        if (filenum) filename += "__"+cvtToStr(filenum);
+        filename += (m_slow ? "__Slow":"");
+        filename += ".cpp";
 
 	AstCFile* cfilep = newCFile(filename, m_slow, true/*source*/);
 	cfilep->support(true);
@@ -2847,7 +2887,7 @@ class EmitCTrace : EmitCStmts {
 	puts(",");
 	putsQuoted(nodep->showname());
         // Direction
-        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+        if (v3Global.opt.traceFormat().fstFlavor()) {
             puts(","+cvtToStr(enumNum));
             // fstVarDir
             if (nodep->declDirection().isInoutish()) puts(",FST_VD_INOUT");
@@ -2914,9 +2954,9 @@ class EmitCTrace : EmitCStmts {
 
     int emitTraceDeclDType(AstNodeDType* nodep) {
         // Return enum number or -1 for none
-        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+        if (v3Global.opt.traceFormat().fstFlavor()) {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
-            // Alternatively back in V3Width we could have push enum names from upper typedefs
+            // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
                 int enumNum = enump->user1();
                 if (!enumNum) {

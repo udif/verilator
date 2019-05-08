@@ -3,6 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2017 by Chris Randall.
 
+interface ifc;
+   integer value;
+   modport out_modport (output value);
+endinterface
+
 module m
   (
    input  clk_ip, //  verilator tag clk_ip
@@ -20,6 +25,10 @@ module m
 
    // This is a comment
 
+   ifc itop();
+
    my_struct this_struct [2];  // verilator tag this_struct
+
+   wire [31:0] dotted = itop.value;
 
 endmodule

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2004-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -61,6 +61,9 @@ public:
 	of.puts("VM_THREADS = "); of.puts(cvtToStr(v3Global.opt.threads())); of.puts("\n");
 	of.puts("# Tracing output mode?  0/1 (from --trace)\n");
 	of.puts("VM_TRACE = "); of.puts(v3Global.opt.trace()?"1":"0"); of.puts("\n");
+        of.puts("# Tracing threadeds output mode?  0/1 (from --trace-fst-thread)\n");
+        of.puts("VM_TRACE_THREADED = "); of.puts(v3Global.opt.traceFormat().threaded()
+                                                 ?"1":"0"); of.puts("\n");
 
 	of.puts("\n### Object file lists...\n");
 	for (int support=0; support<3; support++) {

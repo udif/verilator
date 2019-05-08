@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -475,6 +475,7 @@ class AstSenTree;
 %token<fl>		yD_FINISH	"$finish"
 %token<fl>		yD_FLOOR	"$floor"
 %token<fl>		yD_FOPEN	"$fopen"
+%token<fl>		yD_FREAD	"$fread"
 %token<fl>		yD_FSCANF	"$fscanf"
 %token<fl>		yD_FWRITE	"$fwrite"
 %token<fl>		yD_HIGH		"$high"
@@ -2084,7 +2085,9 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
-	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
+		          if ($<fl>1->language() < V3LangCode::L1800_2009) {
+			     $<fl>1->v3error("Parameter requires default value, or use IEEE 1800-2009 or later."); } }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -2390,8 +2393,21 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Below under expr
 	//
 	//			// IEEE: subroutine_call_statement
-	//UNSUP	yVOID yP_TICK '(' function_subroutine_callNoMethod ')' ';' { }
-	//UNSUP	yVOID yP_TICK '(' expr '.' function_subroutine_callNoMethod ')' ';' { }
+	//			// IEEE says we then expect a function call
+	//			// (function_subroutine_callNoMethod), but rest of
+	//			// the code expects an AstTask when used as a statement,
+	//			// so parse as if task
+	//			// Alternative would be shim with new AstVoidStmt.
+	|	yVOID yP_TICK '(' task_subroutine_callNoMethod ')' ';'
+							{ $$ = $4;
+							  FileLine* newfl = new FileLine($$->fileline());
+							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+							  $$->fileline(newfl); }
+	|	yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
+							{ $$ = new AstDot($5, $4, $6);
+							  FileLine* newfl = new FileLine($6->fileline());
+							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+							  $6->fileline(newfl); }
 	//			// Expr included here to resolve our not knowing what is a method call
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
@@ -2647,13 +2663,29 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
 for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
 	//			// IEEE: for_variable_declaration
-		data_type idAny/*new*/ '=' expr ';'
+		for_initializationItemList ';'		{ $$ = $1; }
+	//			// IEEE: 1800-2017 empty initialization
+	|	';'					{ $$ = NULL; }
+	;
+
+for_initializationItemList<nodep>:	// IEEE: [for_variable_declaration...]
+		for_initializationItem			{ $$ = $1; }
+	|	for_initializationItemList ',' for_initializationItem	{ $$ = $1; $<fl>2->v3error("Unsupported: for loop initialization after the first comma"); }
+	;
+
+for_initializationItem<nodep>:		// IEEE: variable_assignment + for_variable_declaration
+	//			// IEEE: for_variable_declaration
+		data_type idAny/*new*/ '=' expr
 			{ VARRESET_NONLIST(VAR); VARDTYPE($1);
 			  $$ = VARDONEA($<fl>2,*$2,NULL,NULL);
-			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
-	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
-	|	';'					{ $$ = NULL; }
-	//UNSUP: List of initializations
+			  $$->addNext(new AstAssign($3, new AstVarRef($3,*$2,true), $4));}
+	//			// IEEE-2012:
+	|	yVAR data_type idAny/*new*/ '=' expr
+			{ VARRESET_NONLIST(VAR); VARDTYPE($2);
+			  $$ = VARDONEA($<fl>3,*$3,NULL,NULL);
+			  $$->addNext(new AstAssign($4, new AstVarRef($4,*$3,true), $5));}
+	//			// IEEE: variable_assignment
+	|	varRefBase '=' expr			{ $$ = new AstAssign($2, $1, $3); }
 	;
 
 for_stepE<nodep>:		// IEEE: for_step + empty
@@ -2662,8 +2694,8 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 	;
 
 for_step<nodep>:		// IEEE: for_step
-	//UNSUP: List of steps, instead we keep it simple
 		genvar_iteration			{ $$ = $1; }
+	|	for_step ',' genvar_iteration		{ $$ = $1; $<fl>1->v3error("Unsupported: for loop step after the first comma"); }
 	;
 
 loop_variables<nodep>:		// IEEE: loop_variables
@@ -2799,6 +2831,9 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
 	|	yD_FGETS '(' idClassSel ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
+	|	yD_FREAD '(' idClassSel ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,NULL,NULL); }
+	|	yD_FREAD '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,$7,NULL); }
+	|	yD_FREAD '(' idClassSel ',' expr ',' expr ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,$7,$9); }
 	|	yD_FLOOR '(' expr ')'			{ $$ = new AstFloorD($1,$3); }
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
 	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,NULL); }
@@ -3262,6 +3297,13 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// IEEE: concatenation/constant_concatenation
 	//			// Replicate(1) required as otherwise "{a}" would not be self-determined
 	|	'{' cateList '}'			{ $$ = new AstReplicate($1,$2,1); }
+	|	'{' cateList '}' '[' expr ']'		{ $$ = new AstSelBit($4, new AstReplicate($1,$2,1), $5); }
+	|	'{' cateList '}' '[' constExpr ':' constExpr ']'
+							{ $$ = new AstSelExtract($4, new AstReplicate($1,$2,1), $5, $7); }
+	|	'{' cateList '}' '[' expr yP_PLUSCOLON constExpr ']'
+							{ $$ = new AstSelPlus($4, new AstReplicate($1,$2,1), $5, $7); }
+	|	'{' cateList '}' '[' expr yP_MINUSCOLON constExpr ']'
+							{ $$ = new AstSelMinus($4, new AstReplicate($1,$2,1), $5, $7); }
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires
@@ -3945,14 +3987,8 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
-    FileLine* newfl = new FileLine (fileline);
-    newfl->warnOff(V3ErrorCode::WIDTH, true);
-    AstNode* nodep = new AstConst(newfl, V3Number(newfl));
-    // Adding a NOT is less work than figuring out how wide to make it
-    if (value) nodep = new AstNot(newfl, nodep);
-    nodep = new AstAssignW(newfl, new AstVarRef(fileline, name, true),
-			   nodep);
-    return nodep;
+    return new AstAssignW(fileline, new AstVarRef(fileline, name, true),
+                          new AstConst(fileline, V3Number(fileline, (value ? "'1" : "'0"))));
 }
 
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {

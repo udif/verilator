@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -110,6 +110,8 @@ private:
     AstNodeModule* m_modp;  // Current module being processed
 
     string m_unlinkedTxt;	// Text for AstUnlinkedRef
+
+    UnrollStateful m_unroller;  // Loop unroller
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -269,21 +271,29 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) {
-	if (!nodep->user5SetOnce()) {  // Process once
+        if (!nodep->user5SetOnce()) {  // Process once
             iterateChildren(nodep);
-	    if (nodep->isParam()) {
-		if (!nodep->valuep()) { nodep->v3fatalSrc("Parameter without initial value"); }
-		V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
-		    // Make a new INITIAL to set the value.
-		    // This allows the normal array/struct handling code to properly initialize the parameter
-		    nodep->addNext(new AstInitial(nodep->fileline(),
-						  new AstAssign(nodep->fileline(),
-								new AstVarRef(nodep->fileline(), nodep, true),
-								nodep->valuep()->cloneTree(true))));
-		}
-	    }
-	}
+            if (nodep->isParam()) {
+                if (!nodep->valuep()) {
+                    nodep->v3error("Parameter without initial value is never given value"
+                                   <<" (IEEE 1800-2017 6.20.1): "
+                                   <<nodep->prettyName());
+                } else {
+                    V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+                    if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
+                        // Make a new INITIAL to set the value.
+                        // This allows the normal array/struct handling code to properly
+			// initialize the parameter.
+                        nodep->addNext(
+                            new AstInitial(nodep->fileline(),
+                                           new AstAssign(
+                                               nodep->fileline(),
+                                               new AstVarRef(nodep->fileline(), nodep, true),
+                                               nodep->valuep()->cloneTree(true))));
+                    }
+                }
+            }
+        }
     }
     // Make sure varrefs cause vars to constify before things above
     virtual void visit(AstVarRef* nodep) {
@@ -443,9 +453,11 @@ private:
 	    // a BEGIN("zzz__BRA__{loop#}__KET__")
 	    string beginName = nodep->name();
 	    // Leave the original Begin, as need a container for the (possible) GENVAR
-	    // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
-	    V3Unroll::unrollGen(forp, beginName); VL_DANGLING(forp);
-	    // Blocks were constructed under the special begin, move them up
+            // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
+            // Don't remove any deleted nodes in m_unroller until whole process finishes,
+            // (are held in m_unroller), as some AstXRefs may still point to old nodes.
+            m_unroller.unrollGen(forp, beginName); VL_DANGLING(forp);
+            // Blocks were constructed under the special begin, move them up
 	    // Note forp is null, so grab statements again
 	    if (AstNode* stmtsp = nodep->genforp()) {
 		stmtsp->unlinkFrBackWithNext();

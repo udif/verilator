@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -510,6 +510,36 @@ public:
 
 //######################################################################
 
+/// Boolean or unknown
+class VBoolOrUnknown {
+public:
+    enum en {
+        BU_FALSE=0,
+        BU_TRUE=1,
+        BU_UNKNOWN=2,
+        _ENUM_END
+    };
+    enum en m_e;
+    // CONSTRUCTOR - note defaults to *UNKNOWN*
+    inline VBoolOrUnknown() : m_e(BU_UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VBoolOrUnknown(en _e) : m_e(_e) {}
+    explicit inline VBoolOrUnknown(int _e) : m_e(static_cast<en>(_e)) {}
+    const char* ascii() const {
+        static const char* const names[] = {
+            "FALSE","TRUE","UNK"};
+        return names[m_e]; }
+    bool trueU() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
+    bool falseU() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
+    bool unknown() const { return m_e == BU_UNKNOWN; }
+  };
+  inline bool operator== (VBoolOrUnknown lhs, VBoolOrUnknown rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VBoolOrUnknown lhs, VBoolOrUnknown::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VBoolOrUnknown::en lhs, VBoolOrUnknown rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {
@@ -548,11 +578,27 @@ public:
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
             "IFACEREF"};
         return names[m_e]; }
-    bool isSignal() const  { return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
-                                     || m_e==TRIWIRE
-                                     || m_e==TRI0 || m_e==TRI1 || m_e==PORT
-                                     || m_e==SUPPLY0 || m_e==SUPPLY1
-                                     || m_e==VAR); }
+    bool isSignal() const {
+        return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
+                || m_e==TRIWIRE
+                || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                || m_e==SUPPLY0 || m_e==SUPPLY1
+                || m_e==VAR);
+    }
+    bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
+        return (m_e==SUPPLY0 || m_e==SUPPLY1
+                || m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
+                || m_e==TRIWIRE || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
+                || m_e==XTEMP || m_e==IFACEREF);
+    }
+    bool isProcAssignable() const {
+        return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
+                || m_e==VAR
+                || m_e==TRIWIRE || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
+                || m_e==XTEMP || m_e==IFACEREF);
+    }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
@@ -1626,6 +1672,7 @@ public:
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
+    virtual bool isStatement() const { return true; }  // Really a statement
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
@@ -1959,13 +2006,13 @@ class AstNodeSel : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
 public:
     AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-	:AstNodeBiop(fl, fromp, bitp) {}
+        : AstNodeBiop(fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
-    AstNode* fromp() const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
-    AstNode* bitp() const { return op2p(); }	// op2 = Msb selection expression
+    AstNode* bitp() const { return op2p(); }  // op2 = Msb selection expression
     void bitp(AstNode* nodep) { setOp2p(nodep); }
-    int	     bitConst()	const;
+    int bitConst() const;
     virtual bool hasDType() const { return true; }
 };
 
@@ -2051,8 +2098,9 @@ public:
     bool pure() const { return m_pure; }
 };
 
-class AstNodeFTaskRef : public AstNode {
+class AstNodeFTaskRef : public AstNodeStmt {
     // A reference to a task (or function)
+    // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
     AstNodeFTask*	m_taskp;	// [AfterLink] Pointer to task referenced
     string		m_name;		// Name of variable
@@ -2061,14 +2109,14 @@ private:
     AstPackage*		m_packagep;	// Package hierarchy
 public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
-	:AstNode(fl)
-	, m_taskp(NULL), m_packagep(NULL) {
-	setOp1p(namep);	addNOp2p(pinsp);
+        : AstNodeStmt(fl)
+        , m_taskp(NULL), m_packagep(NULL) {
+        setOp1p(namep); addNOp2p(pinsp);
     }
     AstNodeFTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-	:AstNode(fl)
-	, m_taskp(NULL), m_name(name), m_packagep(NULL) {
-	addNOp2p(pinsp);
+        : AstNodeStmt(fl)
+        , m_taskp(NULL), m_name(name), m_packagep(NULL) {
+        addNOp2p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const { BROKEN_RTN(m_taskp && !m_taskp->brokeExists()); return NULL; }

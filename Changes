@@ -2,14 +2,101 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.013 devel
 
-* Verilator 4.007 devel
+***   Add --trace-fst-thread.
+
+****  Support '#' comments in $readmem, bug1411. [Frederick Requin]
+
+****  Support "'dx" constants, bug1423. [Udi Finkelstein]
+
+****  For FST tracing use LZ4 compression. [Tony Bybell]
+
+****  Add error when use parameters without value, bug1424. [Peter Gerst]
+
+****  Auto-extend and WIDTH warn on unsized X/Zs, bug1423. [Udi Finkelstein]
+
+****  Fix missing VL_SHIFTL_ errors, bug1412, bug1415. [Larry Lee]
+
+****  Fix MinGW GCC 6 printf formats, bug1413. [Sergey Kvachonok]
+
+****  Fix test problems when missing fst2vcd, bug1417. [Todd Strader]
+
+****  Fix GTKWave register warning, bug1421. [Pieter Kapsenberg]
+
+****  Fix FST enums not displaying, bug1426. [Danilo Ramos]
+
+****  Fix table compile error with multiinterfaces, bug1431. [Bogdan Vukobratovic]
+
+
+* Verilator 4.012 2019-3-23
+
+***   Add +verilator+seed, bug1396. [Stan Sokorac]
+
+***   Support $fread.  [Leendert van Doorn]
+
+***   Support void' cast on functions called as tasks, bug1383. [Al Grant]
+
+***   Add IGNOREDRETURN warning, bug1383.
+
+****  Report PORTSHORT errors on concat constants, bug 1400. [Will Korteland]
+
+****  Fix VERILATOR_GDB being ignored, msg2860. [Yu Sheng Lin]
+
+****  Fix $value$plus$args missing verilated_heavy.h. [Yi-Chung Chen]
+
+****  Fix MSVC compile error, bug1406. [Benjamin Gartner]
+
+****  Fix maintainer test when no Parallel::Forker, msg2630. [Enzo Chi]
+
+****  Fix +1364-1995ext flags applying too late, bug1384. [Al Grant]
+
+
+* Verilator 4.010 2019-01-27
+
+***   Removed --trace-lxt2, use --trace-fst instead.
+
+****  For --xml, add additional information, bug1372. [Jonathan Kimmitt]
+
+****  Add circular typedef error, bug1388.  [Al Grant]
+
+****  Add unsupported for loops error, msg2692. [Yu Sheng Lin]
+
+****  Fix FST tracing of wide arrays, bug1376. [Aleksander Osman]
+
+****  Fix error when pattern assignment has too few elements, bug1378. [Viktor Tomov]
+
+****  Fix error when no modules in $unit, bug1381. [Al Grant]
+
+****  Fix missing too many digits warning, bug1380. [Jonathan Kimmitt]
+
+****  Fix uninitialized data in verFiles and unroller, bug1385. bug1386. [Al Grant]
+
+****  Fix internal error on xrefs into unrolled functions, bug1387. [Al Grant]
+
+****  Fix DPI export void compiler error, bug1391. [Stan Sokorac]
+
+
+* Verilator 4.008 2018-12-01
 
 ***   Support "ref" and "const ref" pins and functions, bug1360. [Jake Longo]
 
-***   In --xml-only show the original unmodified names, msg2716. [Kanad Kanhere]
+***   In --xml-only show the original unmodified names, and add module_files
+      and cells similar to Verilog-Perl, msg2719. [Kanad Kanhere]
+
+****  Add CONTASSREG error on continuous assignments to regs, bug1369. [Peter Gerst]
+
+****  Add PROCASSWIRE error on behavioral assignments to wires, msg2737. [Neil Turton]
+
+****  Add IMPORTSTAR warning on import::* inside $unit scope.
 
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
+
+****  Fix hang on bad pattern keys, bug1364. [Matt Myers]
+
+****  Fix crash due to cygwin bug in getline, bug1349. [Affe Mao]
+
+****  Fix __Slow files getting compiled with OPT_FAST, bug1370. [Thomas Watts]
 
 
 * Verilator 4.006 2018-10-27
@@ -3163,7 +3250,7 @@ of input ports exists for tracing.
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright 2001-2018 by Wilson Snyder.  This program is free software; you
+Copyright 2001-2019 by Wilson Snyder.  This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

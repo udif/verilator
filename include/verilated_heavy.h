@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2010-2018 by Wilson Snyder. This program is free software; you can
+// Copyright 2010-2019 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -27,7 +27,7 @@
 
 
 #ifndef _VERILATED_HEAVY_H_
-#define _VERILATED_HEAVY_H_ 1 ///< Header Guard
+#define _VERILATED_HEAVY_H_ 1  ///< Header Guard
 
 #include "verilated.h"
 
@@ -88,4 +88,4 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
-#endif // Guard
+#endif  // Guard

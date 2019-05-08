@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -122,9 +122,9 @@ public:
     class iterator {
     protected:
         // MEMBERS
-        size_t m_bucketIdx; //  Bucket this iterator points into.
-        typename Bucket::iterator m_bit; //  Bucket-local iterator.
-        const vl_unordered_set* m_setp;  //  The containing set.
+        size_t m_bucketIdx;  //  Bucket this iterator points into
+        typename Bucket::iterator m_bit;  // Bucket-local iterator
+        const vl_unordered_set* m_setp;  // The containing set
 
     public:
         // CONSTRUCTORS
@@ -469,7 +469,7 @@ private:
 
     // MEMBERS
     typedef vl_unordered_set<KeyValPair, KeyHash, KeyEqual> MapSet;
-    MapSet m_set;   //  Wrap this vl_unordered_set which holds all state.
+    MapSet m_set;  // Wrap this vl_unordered_set which holds all state.
 
 public:
     // CONSTRUCTORS

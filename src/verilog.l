@@ -6,7 +6,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2018 by Wilson Snyder.  Verilator is free software;
+ * Copyright 2003-2019 by Wilson Snyder.  Verilator is free software;
  * you can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -227,6 +227,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$finish"		{ FL; return yD_FINISH; }
   "$floor"		{ FL; return yD_FLOOR; }
   "$fopen"		{ FL; return yD_FOPEN; }
+  "$fread"		{ FL; return yD_FREAD; }
   "$fscanf"		{ FL; return yD_FSCANF; }
   "$fullskew"		{ FL; return yaTIMINGSPEC; }
   "$fwrite"		{ FL; return yD_FWRITE; }

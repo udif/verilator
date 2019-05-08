@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1170,11 +1170,15 @@ private:
 	    nodep->replaceWith(outrefp);
 	    // Insert new statements
             visitp = insertBeforeStmt(nodep, beginp);
-	} else {
-	    // outvscp maybe non-NULL if calling a function in a taskref,
-	    // but if so we want to simply ignore the function result
-	    nodep->replaceWith(beginp);
-	}
+        } else {
+            if (nodep->taskp()->isFunction()) {
+                nodep->v3warn(IGNOREDRETURN,
+                              "Ignoring return value of non-void function (IEEE 2017 13.4.1)");
+            }
+            // outvscp maybe non-NULL if calling a function in a taskref,
+            // but if so we want to simply ignore the function result
+            nodep->replaceWith(beginp);
+        }
 	// Cleanup
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	UINFO(4,"  FTask REF Done.\n");
@@ -1256,6 +1260,10 @@ private:
 	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp");
     }
     virtual void visit(AstNodeStmt* nodep) {
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep;
         iterateChildren(nodep);

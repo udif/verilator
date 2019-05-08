@@ -27,17 +27,21 @@ int main(int argc, char** argv, char** env) {
 
     // Prevent unused variable warnings
     if (0 && argc && argv && env) {}
-    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
-    Verilated::commandArgs(argc, argv);
 
     // Set debug level, 0 is off, 9 is highest presently used
+    // May be overridden by commandArgs
     Verilated::debug(0);
 
     // Randomization reset policy
+    // May be overridden by commandArgs
     Verilated::randReset(2);
 
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    Verilated::commandArgs(argc, argv);
+
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop; // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
+    Vtop* top = new Vtop;  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
 
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
@@ -90,14 +94,14 @@ int main(int argc, char** argv, char** env) {
 
 #if VM_TRACE
         // Dump trace data for this cycle
-        if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump(main_time);
 #endif
 
         // Read outputs
-        VL_PRINTF ("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-                   " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
-                   main_time, top->clk, top->reset_l, top->in_quad,
-                   top->out_quad, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
+        VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
+                  " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
+                  main_time, top->clk, top->reset_l, top->in_quad,
+                  top->out_quad, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }
 
     // Final model cleanup

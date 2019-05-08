@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -49,8 +49,9 @@ public:
 	I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
 	// Error codes:
 	E_DETECTARRAY,	// Error: Unsupported: Can't detect changes on arrayed variable
-	E_MULTITOP,	// Error: Multiple top level modules
-	E_TASKNSVAR,	// Error: Task I/O not simple
+        E_MULTITOP,     // Error: Multiple top level modules
+        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_TASKNSVAR,    // Error: Task I/O not simple
 	//
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
@@ -70,15 +71,18 @@ public:
 	CLKDATA,        // Clock used as data
 	CMPCONST,	// Comparison is constant due to limited range
 	COLONPLUS,	// :+ instead of +:
-	COMBDLY,	// Combinatorial delayed assignment
-	DEFPARAM,	// Style: Defparam
-	DECLFILENAME,	// Declaration doesn't match filename
+        COMBDLY,        // Combinatorial delayed assignment
+        CONTASSREG,     // Continuous assignment on reg
+        DEFPARAM,       // Style: Defparam
+        DECLFILENAME,   // Declaration doesn't match filename
 	ENDLABEL,	// End lable name mismatch
 	GENCLK,		// Generated Clock
 	IFDEPTH,	// If statements too deep
-	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
-	IMPLICIT,	// Implicit wire
-	IMPURE,		// Impure function not being inlined
+        IGNOREDRETURN,  // Ignoring return value (funcation as task)
+        IMPERFECTSCH,   // Imperfect schedule (disabled by default)
+        IMPLICIT,       // Implicit wire
+        IMPORTSTAR,     // Import::* in $unit
+        IMPURE,         // Impure function not being inlined
 	INCABSPATH,	// Include has absolute path
         INFINITELOOP,   // Infinite loop
 	INITIALDLY,	// Initial delayed statement
@@ -87,8 +91,9 @@ public:
 	MULTIDRIVEN,	// Driven from multiple blocks
 	PINMISSING,	// Cell pin not specified
 	PINNOCONNECT,	// Cell pin not connected
-	PINCONNECTEMPTY,// Cell pin connected by name with empty reference: ".name()" (can be used to mark unused pins)
-	REALCVT,	// Real conversion
+        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PROCASSWIRE,    // Procedural assignment on wire
+        REALCVT,        // Real conversion
 	REDEFMACRO,	// Redefining existing define macro
 	SELRANGE,	// Selection index out of range
 	STMTDLY,	// Delayed statement
@@ -125,20 +130,22 @@ public:
 	    " MIN", " INFO", " FATAL", " FATALSRC", " ERROR",
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
-	    // Errors
-	    "DETECTARRAY", "MULTITOP", "TASKNSVAR",
-	    // Warnings
+            // Errors
+            "DETECTARRAY", "MULTITOP", "PORTSHORT", "TASKNSVAR",
+            // Warnings
 	    " EC_FIRST_WARN",
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
-	    "ENDLABEL", "GENCLK",
-	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
+            "DEFPARAM", "DECLFILENAME",
+            "ENDLABEL", "GENCLK",
+            "IFDEPTH", "IGNOREDRETURN",
+            "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
-	    "LITENDIAN", "MODDUP",
-	    "MULTIDRIVEN",
-	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
+            "LITENDIAN", "MODDUP",
+            "MULTIDRIVEN",
+            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT",
@@ -157,8 +164,10 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
-					 || m_e==BLKLOOPINIT
-					 || m_e==IMPURE); }
+                                         || m_e==BLKLOOPINIT
+                                         || m_e==CONTASSREG
+                                         || m_e==IMPURE
+                                         || m_e==PROCASSWIRE); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
 					  || pretendError() ); }
@@ -182,9 +191,10 @@ public:
 				       || m_e==BLKSEQ
 				       || m_e==DEFPARAM
 				       || m_e==DECLFILENAME
-				       || m_e==INCABSPATH
-				       || m_e==PINCONNECTEMPTY
-				       || m_e==PINNOCONNECT
+                                       || m_e==IMPORTSTAR
+                                       || m_e==INCABSPATH
+                                       || m_e==PINCONNECTEMPTY
+                                       || m_e==PINNOCONNECT
 				       || m_e==SYNCASYNCNET
 				       || m_e==UNDRIVEN
 				       || m_e==UNUSED

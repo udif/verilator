@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2018 by Wilson Snyder.  This program is free software;
+// Copyright 2001-2019 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -40,7 +40,7 @@ class VerilatedVcdCallInfo;
 
 class VerilatedVcdFile {
 private:
-    int                 m_fd;           ///< File descriptor we're writing to
+    int m_fd;  ///< File descriptor we're writing to
 public:
     // METHODS
     VerilatedVcdFile() : m_fd(0) {}
@@ -134,17 +134,24 @@ private:
     // cppcheck-suppress functionConst
     void dumpDone();
     inline void printCode(vluint32_t code) {
-        if (code>=(94*94*94)) *m_writep++ = static_cast<char>((code/94/94/94)%94+33);
-        if (code>=(94*94))    *m_writep++ = static_cast<char>((code/94/94)%94+33);
-        if (code>=(94))       *m_writep++ = static_cast<char>((code/94)%94+33);
-        *m_writep++ = static_cast<char>((code)%94+33);
+        *m_writep++ = static_cast<char>('!' + code % 94);
+        code /= 94;
+        while (code) {
+            code--;
+            *m_writep++ = static_cast<char>('!' + code % 94);
+            code /= 94;
+        }
     }
     static std::string stringCode(vluint32_t code) VL_PURE {
         std::string out;
-        if (code>=(94*94*94)) out += static_cast<char>((code/94/94/94)%94+33);
-        if (code>=(94*94))    out += static_cast<char>((code/94/94)%94+33);
-        if (code>=(94))       out += static_cast<char>((code/94)%94+33);
-        return out + static_cast<char>((code)%94+33);
+        out += static_cast<char>('!' + code % 94);
+        code /= 94;
+        while (code) {
+            code--;
+            out += static_cast<char>('!' + code % 94);
+            code /= 94;
+        }
+        return out;
     }
 
     // CONSTRUCTORS

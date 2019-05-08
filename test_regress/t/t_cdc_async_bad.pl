@@ -12,17 +12,13 @@ scenarios(vlt => 1);
 compile(
     v_flags => ['--cdc'],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     fails => 1,
-    expect =>
-'%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst2_bad_n
-%Warning-CDCRSTLOGIC: Use "/\* verilator lint_off CDCRSTLOGIC \*/" and lint_on around source to disable this message.
-%Warning-CDCRSTLOGIC:      See details in obj_vlt/t_cdc_async_bad/Vt_cdc_async_bad__cdc.txt
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst6a_bad_n
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst6b_bad_n
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
-file_grep ("$Self->{obj_dir}/V$Self->{name}__cdc.txt", qr/CDC Report/);
+file_grep("$Self->{obj_dir}/V$Self->{name}__cdc.txt", qr/CDC Report/);
 
 ok(1);
 1;

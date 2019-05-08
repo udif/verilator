@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2018 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1248,11 +1248,8 @@ public:
                     if (mtaskCount > maxMTasks) {
                         uint32_t oldLimit = m_scoreLimit;
                         m_scoreLimit = (m_scoreLimit * 120) / 100;
-
-                        // Line must be >0 otherwise FileLine doesn't check
-                        // if the warning is suppressed with -Wno-UNOPTTHREADS
-                        FileLine dummyFl("AstRoot", 1);
-                        dummyFl.v3warn(UNOPTTHREADS, "Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.");
+                        v3Global.rootp()->fileline()->v3warn(
+                            UNOPTTHREADS, "Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.");
                         UINFO(1,"Critical path limit was="<<oldLimit
                               <<" now="<<m_scoreLimit<<endl);
                         continue;

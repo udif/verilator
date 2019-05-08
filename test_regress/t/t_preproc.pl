@@ -9,17 +9,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-$Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
     verilator_flags2 => ['-DDEF_A0 -DPREDEF_COMMAND_LINE -E'],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     stdout_filename => $stdout_filename,
     );
 
-ok(preproc_check($Self->{top_filename}, $stdout_filename)
-   && files_identical($stdout_filename, $Self->{golden_out}));
+preproc_check($Self->{top_filename}, $stdout_filename);
+files_identical($stdout_filename, $Self->{golden_filename});
+ok(1);
 
 sub preproc_check {
     my $filename1 = shift;
@@ -54,7 +56,6 @@ sub preproc_check {
         $fh->close;
     }
     if ($Line_Checks[0]) { error("$filename2: Missing a Line_Preproc_Check\n"); }
-    return 1;
 }
 
 1;
