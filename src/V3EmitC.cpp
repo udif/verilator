@@ -373,7 +373,7 @@ public:
 	puts("VL_FCLOSE_I(");
         iterateAndNextNull(nodep->filep());
 	puts("); ");
-        iterateAndNextNull(nodep->filep());  // For saftey, so user doesn't later WRITE with it.
+        iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
 	puts("=0;\n");
     }
     virtual void visit(AstFFlush* nodep) {
@@ -2979,7 +2979,7 @@ class EmitCTrace : EmitCStmts {
                          itemp=VN_CAST(itemp->nextp(), EnumItem)) {
                         AstConst* constp = VN_CAST(itemp->valuep(), Const);
                         if (++nvals > 1) puts(", ");
-                        putbs("\""+constp->num().displayed(nodep->fileline(), "%0b")+"\"");
+                        putbs("\""+constp->num().displayed(nodep, "%0b")+"\"");
                     }
                     puts("};\n");
                     puts("vcdp->declDTypeEnum("+cvtToStr(enumNum)
