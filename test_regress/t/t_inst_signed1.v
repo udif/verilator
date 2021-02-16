@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2018 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2018 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -40,8 +41,8 @@ endmodule
 //msg2540
 module sub1 (
              input signed  i,
-             output signed o);
-   wire signed o = ~i;
+             output wire signed o);
+   assign o = ~i;
 endmodule
 
 module sub2 (i,o);

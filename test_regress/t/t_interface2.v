@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -103,6 +104,10 @@ module counter_nansi(clkm, c_data, i_value);
 endmodule : counter_nansi
 `endif
 
+// Test uses Verilator --top-module, which means this isn't in the hierarchy
+// Other simulators will see it, and is illegal to have unconnected interface
+`ifdef VERILATOR
 module modunused (ifunused ifinunused);
    ifunused ifunused();
 endmodule
+`endif

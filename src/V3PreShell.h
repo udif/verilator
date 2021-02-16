@@ -2,22 +2,18 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Preprocessing wrapper program
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2004-2019 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-
+
 #ifndef _V3PRESHELL_H_
 #define _V3PRESHELL_H_ 1
 
@@ -28,21 +24,22 @@
 #include "V3FileLine.h"
 
 class V3ParseImp;
-class V3InFilter;
+class VInFilter;
+class VSpellCheck;
 
 //============================================================================
 
-class V3PreShell {
+class V3PreShell final {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);
-    static bool preproc(FileLine* fl, const string& modname, V3InFilter* filterp,
+    static bool preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                         V3ParseImp* parsep, const string& errmsg);
     static void preprocInclude(FileLine* fl, const string& modname);
-    static string dependFiles() { return ""; }   // Perl only
     static void defineCmdLine(const string& name, const string& value);
     static void undef(const string& name);
     static void dumpDefines(std::ostream& os);
+    static void candidateDefines(VSpellCheck* spellerp);
 };
 
-#endif // Guard
+#endif  // Guard

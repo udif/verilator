@@ -18,6 +18,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 /*
@@ -37,13 +39,15 @@
  *
  */
 
-// Verilator: use hardcoded config file
-//#include <config.h>
-#include "fst_config.h"
+#ifndef FST_CONFIG_INCLUDE
+# define FST_CONFIG_INCLUDE <config.h>
+#endif
+#include FST_CONFIG_INCLUDE
 
 #include "fstapi.h"
 #include "fastlz.h"
 #include "lz4.h"
+#include <errno.h>
 
 #ifndef HAVE_LIBPTHREAD
 #undef FST_WRITER_PARALLEL
@@ -128,6 +132,16 @@ void **JenkinsIns(void *base_i, const unsigned char *mem, uint32_t length, uint3
 #if defined(__APPLE__) && defined(__MACH__)
 #define FST_MACOSX
 #include <sys/sysctl.h>
+#endif
+
+#ifdef __GNUC__
+/* Boolean expression more often true than false */
+#define FST_LIKELY(x) __builtin_expect(!!(x), 1)
+/* Boolean expression more often false than true */
+#define FST_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define FST_LIKELY(x) (!!(x))
+#define FST_UNLIKELY(x) (!!(x))
 #endif
 
 #define FST_APIMESS "FSTAPI  | "
@@ -725,6 +739,9 @@ off_t hier_file_len;
 uint32_t *valpos_mem;
 unsigned char *curval_mem;
 
+unsigned char *outval_mem; /* for two-state / Verilator-style value changes */
+uint32_t outval_alloc_siz;
+
 char *filename;
 
 fstHandle maxhandle;
@@ -777,6 +794,7 @@ pthread_t thread;
 pthread_attr_t thread_attr;
 struct fstWriterContext *xc_parent;
 #endif
+unsigned in_pthread : 1;
 
 size_t fst_orig_break_size;
 size_t fst_orig_break_add_size;
@@ -954,6 +972,19 @@ fflush(xc->handle);
 /*
  * mmap functions
  */
+static void fstWriterMmapSanity(void *pnt, const char *file, int line, const char *usage)
+{
+#if !defined(__CYGWIN__) && !defined(__MINGW32__)
+if(pnt == MAP_FAILED)
+	{
+	fprintf(stderr, "fstMmap() assigned to %s failed: errno: %d, file %s, line %d.\n", usage, errno, file, line);
+	perror("Why");
+	pnt = NULL;
+	}
+#endif
+}
+
+
 static void fstWriterCreateMmaps(struct fstWriterContext *xc)
 {
 off_t curpos = ftello(xc->handle);
@@ -976,19 +1007,29 @@ fflush(xc->handle);
 if(!xc->valpos_mem)
         {
         fflush(xc->valpos_handle);
-        xc->valpos_mem = (uint32_t *)fstMmap(NULL, xc->maxhandle * 4 * sizeof(uint32_t), PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->valpos_handle), 0);
+	errno = 0;
+	if(xc->maxhandle)
+		{
+	        fstWriterMmapSanity(xc->valpos_mem = (uint32_t *)fstMmap(NULL, xc->maxhandle * 4 * sizeof(uint32_t), PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->valpos_handle), 0), __FILE__, __LINE__, "xc->valpos_mem");
+		}
         }
 if(!xc->curval_mem)
         {
         fflush(xc->curval_handle);
-        xc->curval_mem = (unsigned char *)fstMmap(NULL, xc->maxvalpos, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->curval_handle), 0);
+	errno = 0;
+	if(xc->maxvalpos)
+		{
+	        fstWriterMmapSanity(xc->curval_mem = (unsigned char *)fstMmap(NULL, xc->maxvalpos, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->curval_handle), 0), __FILE__, __LINE__, "xc->curval_handle");
+		}
         }
 }
 
 
 static void fstDestroyMmaps(struct fstWriterContext *xc, int is_closing)
 {
+#if !defined __CYGWIN__ && !defined __MINGW32__
 (void)is_closing;
+#endif
 
 fstMunmap(xc->valpos_mem, xc->maxhandle * 4 * sizeof(uint32_t));
 xc->valpos_mem = NULL;
@@ -1684,7 +1725,8 @@ fflush(xc->tchn_handle);
 tlen = ftello(xc->tchn_handle);
 fstWriterFseeko(xc, xc->tchn_handle, 0, SEEK_SET);
 
-tmem = (unsigned char *)fstMmap(NULL, tlen, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->tchn_handle), 0);
+errno = 0;
+fstWriterMmapSanity(tmem = (unsigned char *)fstMmap(NULL, tlen, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->tchn_handle), 0), __FILE__, __LINE__, "tmem");
 if(tmem)
         {
         unsigned long destlen = tlen;
@@ -1764,10 +1806,10 @@ xc->already_in_flush = 0;
 static void *fstWriterFlushContextPrivate1(void *ctx)
 {
 struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+struct fstWriterContext *xc_parent;
 
+pthread_mutex_lock(&(xc->xc_parent->mutex));
 fstWriterFlushContextPrivate2(xc);
-
-pthread_mutex_unlock(&(xc->xc_parent->mutex));
 
 #ifdef FST_REMOVE_DUPLICATE_VC
 free(xc->curval_mem);
@@ -1775,7 +1817,11 @@ free(xc->curval_mem);
 free(xc->valpos_mem);
 free(xc->vchg_mem);
 tmpfile_close(&xc->tchn_handle, &xc->tchn_handle_nam);
+xc_parent = xc->xc_parent;
 free(xc);
+
+xc_parent->in_pthread = 0;
+pthread_mutex_unlock(&(xc_parent->mutex));
 
 return(NULL);
 }
@@ -1824,7 +1870,15 @@ if(xc->parallel_enabled)
         xc->section_header_only = 0;
         xc->secnum++;
 
+	while (xc->in_pthread) 
+		{ 
+		pthread_mutex_lock(&xc->mutex); 
+		pthread_mutex_unlock(&xc->mutex); 
+		};
+
         pthread_mutex_lock(&xc->mutex);
+	xc->in_pthread = 1;
+        pthread_mutex_unlock(&xc->mutex);
 
         pthread_create(&xc->thread, &xc->thread_attr, fstWriterFlushContextPrivate1, xc2);
         }
@@ -1876,7 +1930,7 @@ if(xc)
 
 if(xc && !xc->already_in_close && !xc->already_in_flush)
         {
-        unsigned char *tmem;
+        unsigned char *tmem = NULL;
         off_t fixup_offs, tlen, hlen;
 
         xc->already_in_close = 1; /* never need to zero this out as it is freed at bottom */
@@ -1892,7 +1946,7 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
                 xc->skip_writing_section_hdr = 1;
                 if(!xc->size_limit_locked)
                         {
-                        if(xc->is_initial_time) /* simulation time never advanced so mock up the changes as time zero ones */
+                        if(FST_UNLIKELY(xc->is_initial_time)) /* simulation time never advanced so mock up the changes as time zero ones */
                                 {
                                 fstHandle dupe_idx;
 
@@ -1906,15 +1960,31 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
 #ifdef FST_WRITER_PARALLEL
                         pthread_mutex_lock(&xc->mutex);
                         pthread_mutex_unlock(&xc->mutex);
+
+			while (xc->in_pthread) 
+				{ 
+				pthread_mutex_lock(&xc->mutex); 
+				pthread_mutex_unlock(&xc->mutex); 
+				};
 #endif
                         }
                 }
         fstDestroyMmaps(xc, 1);
+	if(xc->outval_mem)
+		{
+		free(xc->outval_mem); xc->outval_mem = NULL;
+		xc->outval_alloc_siz = 0;
+		}
 
         /* write out geom section */
         fflush(xc->geom_handle);
         tlen = ftello(xc->geom_handle);
-        tmem = (unsigned char *)fstMmap(NULL, tlen, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->geom_handle), 0);
+	errno = 0;
+	if(tlen)
+		{
+	        fstWriterMmapSanity(tmem = (unsigned char *)fstMmap(NULL, tlen, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->geom_handle), 0), __FILE__, __LINE__, "tmem");
+		}
+
         if(tmem)
                 {
                 unsigned long destlen = tlen;
@@ -2022,14 +2092,18 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
                         {
                         int lz4_maxlen;
                         unsigned char *mem;
-                        unsigned char *hmem;
+                        unsigned char *hmem = NULL;
                         int packed_len;
 
                         fflush(xc->handle);
 
                         lz4_maxlen = LZ4_compressBound(xc->hier_file_len);
                         mem = (unsigned char *)malloc(lz4_maxlen);
-                        hmem = (unsigned char *)fstMmap(NULL, xc->hier_file_len, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->hier_handle), 0);
+			errno = 0;
+			if(xc->hier_file_len)
+				{
+	                        fstWriterMmapSanity(hmem = (unsigned char *)fstMmap(NULL, xc->hier_file_len, PROT_READ|PROT_WRITE, MAP_SHARED, fileno(xc->hier_handle), 0), __FILE__, __LINE__, "hmem");
+				}
                         packed_len = LZ4_compress((char *)hmem, (char *)mem, xc->hier_file_len);
                         fstMunmap(hmem, xc->hier_file_len);
 
@@ -2845,12 +2919,12 @@ const unsigned char *buf = (const unsigned char *)val;
 uint32_t offs;
 int len;
 
-if((xc) && (handle <= xc->maxhandle))
+if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
         {
         uint32_t fpos;
         uint32_t *vm4ip;
 
-        if(!xc->valpos_mem)
+        if(FST_UNLIKELY(!xc->valpos_mem))
                 {
                 xc->vc_emitted = 1;
                 fstWriterCreateMmaps(xc);
@@ -2860,17 +2934,17 @@ if((xc) && (handle <= xc->maxhandle))
         vm4ip = &(xc->valpos_mem[4*handle]);
 
         len  = vm4ip[1];
-        if(len) /* len of zero = variable length, use fstWriterEmitVariableLengthValueChange */
+        if(FST_LIKELY(len)) /* len of zero = variable length, use fstWriterEmitVariableLengthValueChange */
                 {
-                if(!xc->is_initial_time)
+                if(FST_LIKELY(!xc->is_initial_time))
                         {
                         fpos = xc->vchg_siz;
 
-                        if((fpos + len + 10) > xc->vchg_alloc_siz)
+                        if(FST_UNLIKELY((fpos + len + 10) > xc->vchg_alloc_siz))
                                 {
                                 xc->vchg_alloc_siz += (xc->fst_break_add_size + len); /* +len added in the case of extremely long vectors and small break add sizes */
                                 xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
-                                if(!xc->vchg_mem)
+                                if(FST_UNLIKELY(!xc->vchg_mem))
                                         {
                                         fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitValueChange, exiting.\n");
                                         exit(255);
@@ -2955,18 +3029,139 @@ if((xc) && (handle <= xc->maxhandle))
         }
 }
 
+void fstWriterEmitValueChange32(void *ctx, fstHandle handle,
+                                uint32_t bits, uint32_t val) {
+        char buf[32];
+        char *s = buf;
+        uint32_t i;
+        for (i = 0; i < bits; ++i)
+        {
+                *s++ = '0' + ((val >> (bits - i - 1)) & 1);
+        }
+        fstWriterEmitValueChange(ctx, handle, buf);
+}
+void fstWriterEmitValueChange64(void *ctx, fstHandle handle,
+                                uint32_t bits, uint64_t val) {
+        char buf[64];
+        char *s = buf;
+        uint32_t i;
+        for (i = 0; i < bits; ++i)
+        {
+                *s++ = '0' + ((val >> (bits - i - 1)) & 1);
+        }
+        fstWriterEmitValueChange(ctx, handle, buf);
+}
+void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
+                                   uint32_t bits, const uint32_t *val) {
+        struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+        if (FST_UNLIKELY(bits <= 32))
+        {
+                fstWriterEmitValueChange32(ctx, handle, bits, val[0]);
+        }
+        else if(FST_LIKELY(xc))
+        {
+                int bq = bits / 32;
+                int br = bits & 31;
+                int i;
+                int w;
+                uint32_t v;
+                unsigned char* s;
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
+                {
+                        xc->outval_alloc_siz = bits*2 + 1;
+                        xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
+                        if (FST_UNLIKELY(!xc->outval_mem))
+                        {
+                                fprintf(stderr,
+                                        FST_APIMESS "Could not realloc() in fstWriterEmitValueChangeVec32, exiting.\n");
+                                exit(255);
+                        }
+                }
+                s = xc->outval_mem;
+                {
+                        w = bq;
+                        v = val[w];
+                        for (i = 0; i < br; ++i)
+                        {
+                                *s++ = '0' + ((v >> (br - i - 1)) & 1);
+                        }
+                }
+                for (w = bq - 1; w >= 0; --w)
+                {
+                        v = val[w];
+                        for (i = (32 - 4); i >= 0; i -= 4) {
+                                s[0] = '0' + ((v >> (i + 3)) & 1);
+                                s[1] = '0' + ((v >> (i + 2)) & 1);
+                                s[2] = '0' + ((v >> (i + 1)) & 1);
+                                s[3] = '0' + ((v >> (i + 0)) & 1);
+                                s += 4;
+                        }
+                }
+                fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
+        }
+}
+void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
+                                   uint32_t bits, const uint64_t *val) {
+        struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+        if (FST_UNLIKELY(bits <= 64))
+        {
+                fstWriterEmitValueChange64(ctx, handle, bits, val[0]);
+        }
+        else if(FST_LIKELY(xc))
+        {
+                int bq = bits / 64;
+                int br = bits & 63;
+                int i;
+                int w;
+                uint32_t v;
+                unsigned char* s;
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
+                {
+                        xc->outval_alloc_siz = bits*2 + 1;
+                        xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
+                        if (FST_UNLIKELY(!xc->outval_mem))
+                        {
+                                fprintf(stderr,
+                                        FST_APIMESS "Could not realloc() in fstWriterEmitValueChangeVec64, exiting.\n");
+                                exit(255);
+                        }
+                }
+                s = xc->outval_mem;
+                {
+                        w = bq;
+                        v = val[w];
+                        for (i = 0; i < br; ++i)
+                        {
+                                *s++ = '0' + ((v >> (br - i - 1)) & 1);
+                        }
+                }
+                for (w = bq - 1; w >= 0; --w) {
+                        v = val[w];
+                        for (i = (64 - 4); i >= 0; i -= 4)
+                        {
+                                s[0] = '0' + ((v >> (i + 3)) & 1);
+                                s[1] = '0' + ((v >> (i + 2)) & 1);
+                                s[2] = '0' + ((v >> (i + 1)) & 1);
+                                s[3] = '0' + ((v >> (i + 0)) & 1);
+                                s += 4;
+                        }
+                }
+                fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
+        }
+}
+
 
 void fstWriterEmitVariableLengthValueChange(void *ctx, fstHandle handle, const void *val, uint32_t len)
 {
 struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
 const unsigned char *buf = (const unsigned char *)val;
 
-if((xc) && (handle <= xc->maxhandle))
+if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
         {
         uint32_t fpos;
         uint32_t *vm4ip;
 
-        if(!xc->valpos_mem)
+        if(FST_UNLIKELY(!xc->valpos_mem))
                 {
                 xc->vc_emitted = 1;
                 fstWriterCreateMmaps(xc);
@@ -2976,15 +3171,15 @@ if((xc) && (handle <= xc->maxhandle))
         vm4ip = &(xc->valpos_mem[4*handle]);
 
         /* there is no initial time dump for variable length value changes */
-        if(!vm4ip[1]) /* len of zero = variable length */
+        if(FST_LIKELY(!vm4ip[1])) /* len of zero = variable length */
                 {
                 fpos = xc->vchg_siz;
 
-                if((fpos + len + 10 + 5) > xc->vchg_alloc_siz)
+                if(FST_UNLIKELY((fpos + len + 10 + 5) > xc->vchg_alloc_siz))
                         {
                         xc->vchg_alloc_siz += (xc->fst_break_add_size + len + 5); /* +len added in the case of extremely long vectors and small break add sizes */
                         xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
-                        if(!xc->vchg_mem)
+                        if(FST_UNLIKELY(!xc->vchg_mem))
                                 {
                                 fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitVariableLengthValueChange, exiting.\n");
                                 exit(255);
@@ -3006,7 +3201,7 @@ unsigned int i;
 int skip = 0;
 if(xc)
         {
-        if(xc->is_initial_time)
+        if(FST_UNLIKELY(xc->is_initial_time))
                 {
                 if(xc->size_limit_locked)       /* this resets xc->is_initial_time to one */
                         {

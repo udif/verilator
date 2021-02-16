@@ -2,13 +2,14 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012.
+// SPDX-License-Identifier: CC0-1.0
 //
 // Contributed by Jeremy Bennett and Jie Xul
 //
 // This test exercises the use of DPI to access signals and registers in a
 // module hierarchy in a uniform fashion. See the discussion at
 //
-// http://www.veripool.org/boards/3/topics/show/752-Verilator-Command-line-specification-of-public-access-to-variables
+// https://www.veripool.org/boards/3/topics/show/752-Verilator-Command-line-specification-of-public-access-to-variables
 //
 // We need to test read and write access to:
 // - scalars

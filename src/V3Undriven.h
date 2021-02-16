@@ -2,22 +2,18 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Check for unused/undriven signals
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-
+
 #ifndef _V3UNDRIVEN_H_
 #define _V3UNDRIVEN_H_ 1
 
@@ -29,9 +25,9 @@
 
 //============================================================================
 
-class V3Undriven {
+class V3Undriven final {
 public:
     static void undrivenAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

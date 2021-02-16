@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2004 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2004 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -56,7 +57,7 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-	 $write("cyc=%0d d=%x %x %x %x %x %x\n", cyc, b, rf, rf2, dualasr, sl_mask, sr_mask);
+	 $write("cyc=%0d d=%x %x %x %x %x %x %x\n", cyc, b, rf, rf2, dualasr, sl_mask, sr_mask, widerep);
 `endif
 	 if (cyc==1) begin
 	    biu <= 64'h12451282_abadee00;

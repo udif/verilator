@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2011 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -90,8 +91,9 @@ module Test1 #(
    bufif1 bufb1  (drv_1, drv_b[1], ~drv_e[1]);
    bufif1 bufa2  (drv_2, drv_a[2],  drv_e[2]);
    bufif1 bufb2  (drv_2, drv_b[2], ~drv_e[2]);
-   bufif1 bufa3  (drv_3, drv_a[3],  drv_e[3]);
-   bufif1 bufb3  (drv_3, drv_b[3], ~drv_e[3]);
+   bufif1
+     bufa3  (drv_3, drv_a[3],  drv_e[3]),
+     bufb3  (drv_3, drv_b[3], ~drv_e[3]);
    assign drv = {drv_3,drv_2,drv_1,drv_0};
 
 endmodule

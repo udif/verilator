@@ -1,6 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2000-2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2000-2011 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 //===========================================================================
 // Includes
@@ -400,7 +401,7 @@ EXP: This is fooed_2
 `ifdef TEMP  `error "bad0" `endif
 Line_Preproc_Check `__LINE__
 //======================================================================
-// Quoted multiline - track line numbers, and insure \\n gets propagated
+// Quoted multiline - track line numbers, and ensure \\n gets propagated
 `define MULQUOTE "FOO \
   BAR "
 `define MULQUOTE2(mq) `MULQUOTE mq `MULQUOTE
@@ -630,6 +631,11 @@ module pcc2_cfg;
    `simple_svfcov_clk(a, b, c, d);
   endgenerate
 endmodule
+
+//======================================================================
+// Verilog-Perl bug1668
+`define stringify(text) `"text`"
+`stringify(`NOT_DEFINED_STR)
 
 //======================================================================
 // IEEE mandated predefines

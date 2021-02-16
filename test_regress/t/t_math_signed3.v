@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2014 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2014 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
 
@@ -13,7 +14,7 @@ module t (/*AUTOARG*/);
    wire [2:0] 	     bug729_b = ~0;
    // the $signed output is unsigned because the input is unsigned; the signedness does not change.
    wire [0:0] 	     bug729_yuu = $signed(2'b11)  == 3'b111;   //1'b0
-   wire [0:0] 	     bug729_ysu = $signed(2'sb11) == 3'b111;   //1'b0
+   wire [0:0] 	     bug729_ysu = $signed(2'SB11) == 3'b111;   //1'b0
    wire [0:0] 	     bug729_yus = $signed(2'b11)  == 3'sb111;  //1'b1
    wire [0:0] 	     bug729_yss = $signed(2'sb11) == 3'sb111;  //1'b1
    wire [0:0] 	     bug729_zuu = 2'sb11 == 3'b111;   //1'b0

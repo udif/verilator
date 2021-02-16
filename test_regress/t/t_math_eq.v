@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -77,4 +78,16 @@ module Test (/*AUTOARG*/
    assign 	out[1] = in[3:0] !=? 4'b1001;
    assign 	out[2] = in[3:0] ==? 4'bx01x;
    assign 	out[3] = in[3:0] !=? 4'bx01x;
+
+   wire signed [3:0] ins = in[3:0];
+
+   wire signed [3:0] outs;
+
+   assign 	outs[0] = ins ==? 4'sb1001;
+   assign 	outs[1] = ins !=? 4'sb1001;
+   assign 	outs[2] = ins ==? 4'sbx01x;
+   assign 	outs[3] = ins !=? 4'sbx01x;
+
+   always_comb if (out != outs) $stop;
+
 endmodule

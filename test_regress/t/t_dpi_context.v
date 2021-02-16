@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t ();
 
@@ -20,6 +21,9 @@ module t ();
       $finish;
    end
 
+   import "DPI-C" context function void dpic_final();
+   final dpic_final();
+
 endmodule
 
 module sub (input integer inst);
@@ -30,6 +34,15 @@ module sub (input integer inst);
    import "DPI-C" context function int unsigned dpic_getcontext();
 
    int result;
+
+   // Exports here are only to cover the export dumper of Verilated::internalsDump
+   export "DPI-C" function dpix_void;
+   function void dpix_void;
+   endfunction
+   export "DPI-C" function dpix_result;
+   function int dpix_result;
+      return result;
+   endfunction
 
    task test1;
       // Check line numbering

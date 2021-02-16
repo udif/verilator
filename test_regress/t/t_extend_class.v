@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003-2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -38,7 +39,7 @@ module t_extend_class_v (/*AUTOARG*/
    );
 
    input [31:0]  in;
-   output [31:0] out;
+   output logic [31:0] out;
 
    always @* begin
       // When "in" changes, call my method

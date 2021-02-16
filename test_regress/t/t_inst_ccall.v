@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003-2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -45,10 +46,10 @@ endmodule
 module sub (input [7:0] narrow, input [63:0] quad, output [31:0] longout, output [63:0] quadout);
    // verilator public_module
 `ifdef verilator
-   wire [31:0] longout = $c32("(",narrow,"+1)");
-   wire [63:0] quadout = $c64("(",quad,"+1)");
+   assign longout = $c32("(",narrow,"+1)");
+   assign quadout = $c64("(",quad,"+1)");
 `else
-   wire [31:0] longout = narrow + 8'd1;
-   wire [63:0] quadout = quad + 64'd1;
+   assign longout = narrow + 8'd1;
+   assign quadout = quad + 64'd1;
 `endif
 endmodule

@@ -6,6 +6,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //*************************************************************************
 
 #include <cstdio>
@@ -22,6 +23,7 @@
 void poke_value(int i) {
     printf("poke_value(%d)\n", i);
 
+// clang-format off
 #ifdef VERILATOR
     static int didDump = 0;
     if (didDump++ == 0) {
@@ -30,6 +32,7 @@ void poke_value(int i) {
 # endif
     }
 #endif
+    // clang-format on
 
     svScope scope = svGetScopeFromName("top.t.a");
     if (scope == NULL) {

@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2013 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 typedef struct packed {
    logic [1:0] b1;
@@ -42,4 +43,3 @@ module t (
    always_comb datao_pre = { xxxxxxx_yyyyy_zzzz.dddddd.b1.fbyte, xxxxxxx_yyyyy_zzzz.dddddd.c1 };
 
 endmodule
-

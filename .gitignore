@@ -1,5 +1,6 @@
 \#*
 .#*
+.nfs*
 *~
 *.tidy
 *.old
@@ -14,9 +15,12 @@
 *.tex
 *.pdf
 /Makefile
+/.ccache
+/artifact/
 README
 TAGS
 autom4te.cache
+compile_commands.json
 config.cache
 config.status
 configure
@@ -30,4 +34,6 @@ verilator.txt
 verilator_bin*
 verilator_coverage_bin*
 verilator.pc
+verilator-config.cmake
+verilator-config-version.cmake
 **/obj_dir/*

@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2016 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 
 //bug1097
 
@@ -23,7 +24,7 @@ module t (/*AUTOARG*/);
    submod
      submod_inst
        (
-	.foo (the_foo)
-	);
+        .foo (the_foo)
+        );
 
 endmodule

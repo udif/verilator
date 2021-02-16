@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2019 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2019 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `define STRINGIFY(x) `"x`"
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
@@ -78,7 +79,8 @@ module t;
 
       clear;
       code = $fread(r_upb, file, 15); `checkd(code, 6);
-      code = $fread(r_ups, file, 15, 2); `checkd(code, 4);
+      // Bug where fread in if() broke.
+      if ($fread(r_ups, file, 15, 2) != 4) $stop;
       dump;
 
       $write("*-* All Finished *-*\n");

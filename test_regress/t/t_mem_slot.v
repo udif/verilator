@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2006 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2006 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `define RegDel 1
 
@@ -12,7 +13,7 @@ module t_mem_slot (Clk, SlotIdx, BitToChange, BitVal, SlotToReturn, OutputVal);
    input        BitToChange;
    input        BitVal;
    input  [1:0] SlotToReturn;
-   output [1:0] OutputVal;
+   output reg [1:0] OutputVal;
 
    reg    [1:0] Array[2:0];
 

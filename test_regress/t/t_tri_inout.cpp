@@ -1,15 +1,14 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2008 by Lane Brooks
+// without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 
 #include "Vt_tri_inout.h"
 
-Vt_tri_inout *tb = NULL;
+VM_PREFIX* tb = nullptr;
 
-double sc_time_stamp() {
-    return 0;
-}
+double sc_time_stamp() { return 0; }
 
 bool check() {
     bool pass;
@@ -40,22 +39,21 @@ int main() {
     tb = new Vt_tri_inout("tb");
 
     // loop through every possibility and check the result
-    for (tb->SEL=0; tb->SEL<2; tb->SEL++) {
-        for (tb->A=0; tb->A<2; tb->A++) {
-            for (tb->B=0; tb->B<2; tb->B++) {
+    for (tb->SEL = 0; tb->SEL < 2; tb->SEL++) {
+        for (tb->A = 0; tb->A < 2; tb->A++) {
+            for (tb->B = 0; tb->B < 2; tb->B++) {
                 tb->eval();
-                if (!check()) {
-                    pass = false;
-                }
+                if (!check()) { pass = false; }
             }
         }
     }
 
-    if(pass) {
+    if (pass) {
         VL_PRINTF("*-* All Finished *-*\n");
         tb->final();
     } else {
-        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from inout test\n");
+        vl_fatal(__FILE__, __LINE__, "top", "Unexpected results from inout test\n");
     }
+    VL_DO_DANGLING(delete tb, tb);
     return 0;
 }

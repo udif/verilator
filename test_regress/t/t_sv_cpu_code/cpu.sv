@@ -2,6 +2,7 @@
 
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012.
+// SPDX-License-Identifier: CC0-1.0
 
 // Contributed by M W Lund, Atmel Corporation.
 
@@ -157,6 +158,7 @@ module cpu
       idec_mem_re  = 1'b0;
       idec_mem_we  = 1'b0;
 
+      // verilator lint_off CASEINCOMPLETE
       casez ( ir )
         16'h0000:;              // NOP (<=> Default)
 

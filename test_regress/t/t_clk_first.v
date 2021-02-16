@@ -1,15 +1,16 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
    clk, fastclk
    );
 
-   input clk /*verilator sc_clock*/;
-   input fastclk /*verilator sc_clock*/;
+   input clk;
+   input fastclk;
    reg 	 reset_l;
 
    int cyc;
@@ -32,8 +33,8 @@ module t_clk (/*AUTOARG*/
    clk, fastclk, reset_l
    );
 
-   input clk /*verilator sc_clock*/;
-   input fastclk /*verilator sc_clock*/;
+   input clk;
+   input fastclk;
    input reset_l;
 
    // surefire lint_off STMINI

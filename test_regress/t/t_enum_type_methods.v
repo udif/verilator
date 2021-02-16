@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2014 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2014 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
@@ -34,10 +35,15 @@ module t (/*AUTOARG*/
       `checkh(e.next, E04);
       `checkh(e.next(), E04);
       `checkh(e.next(1), E04);
-      //Unsup: `checkh(e.next(2), E01);
+      `checkh(e.next(1).next(1), E01);
+      `checkh(e.next(2), E01);
+      `checkh(e.next(1).next(1).next(1), E03);
+      `checkh(e.next(1).next(2), E03);
+      `checkh(e.next(3), E03);
       `checkh(e.prev, E01);
       `checkh(e.prev(1), E01);
-      //Unsup: `checkh(e.prev(2), E04);
+      `checkh(e.prev(1).prev(1), E04);
+      `checkh(e.prev(2), E04);
       `checkh(e.num, 3);
       `checks(e.name, "E03");
       //
@@ -61,30 +67,30 @@ module t (/*AUTOARG*/
 	 `checks(e.name, "E01");
 	 `checkh(e.next, E03);
 	 `checkh(e.next(1), E03);
-	 //Unsup: `checkh(e.next(2), E04);
+	 `checkh(e.next(2), E04);
 	 `checkh(e.prev, E04);
 	 `checkh(e.prev(1), E04);
-	 //Unsup: `checkh(e.prev(2), E03);
+	 `checkh(e.prev(2), E03);
 	 e <= E03;
       end
       else if (cyc==2) begin
 	 `checks(e.name, "E03");
 	 `checkh(e.next, E04);
 	 `checkh(e.next(1), E04);
-	 //Unsup: `checkh(e.next(2), E01);
+	 `checkh(e.next(2), E01);
 	 `checkh(e.prev, E01);
 	 `checkh(e.prev(1), E01);
-	 //Unsup: `checkh(e.prev(2), E04);
+	 `checkh(e.prev(2), E04);
 	 e <= E04;
       end
       else if (cyc==3) begin
 	 `checks(e.name, "E04");
 	 `checkh(e.next, E01);
 	 `checkh(e.next(1), E01);
-	 //Unsup: `checkh(e.next(2), E03);
+	 `checkh(e.next(2), E03);
 	 `checkh(e.prev, E03);
 	 `checkh(e.prev(1), E03);
-	 //Unsup: `checkh(e.prev(2), E01);
+	 `checkh(e.prev(2), E01);
 	 e <= E01;
       end
       else if (cyc==99) begin

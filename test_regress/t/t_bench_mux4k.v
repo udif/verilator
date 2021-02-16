@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 //
 // This implements a 4096:1 mux via two stages of 64:1 muxing.
 
@@ -73,7 +74,9 @@ module t (/*AUTOARG*/
 	 $stop;
       end
 
+`ifdef TEST_VERBOSE
       $write("Addr=%d datao_check=%d datao=%d\n", addr, datao_check, datao);
+`endif
       // only run the first 10 addresses for now
       if (addr > 10) begin
 	 $write("*-* All Finished *-*\n");

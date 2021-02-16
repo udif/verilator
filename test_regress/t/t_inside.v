@@ -1,7 +1,8 @@
 // DESCRIPTION::Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2013 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t;
 
@@ -30,6 +31,13 @@ module t;
 	1'b0:    is_odd = 1'bx;
 	default: is_odd = 1'bx;
       endcase
+   endfunction
+
+   function automatic bit is_00_to_04 (input byte value);
+      return value inside { [ 8'h0 : 8'h04 ] };
+   endfunction
+   function automatic bit is_fe_to_ff (input byte value);
+      return value inside { [ 8'hfe : 8'hff ] };
    endfunction
 
    initial begin
@@ -62,6 +70,15 @@ module t;
 `ifndef VERILATOR
       `checkh (is_odd(1'b1, XXX),  1'dx);
 `endif
+      //
+      // Should not give UNSIGNED/CMPCONST warnings
+      // (Verilator converts to 8'h00 >= 8'h00 which is always true)
+      `checkh(is_00_to_04(8'h00), 1'b1);
+      `checkh(is_00_to_04(8'h04), 1'b1);
+      `checkh(is_00_to_04(8'h05), 1'b0);
+      `checkh(is_fe_to_ff(8'hfd), 1'b0);
+      `checkh(is_fe_to_ff(8'hfe), 1'b1);
+      `checkh(is_fe_to_ff(8'hff), 1'b1);
       //
       $write("*-* All Finished *-*\n");
       $finish;

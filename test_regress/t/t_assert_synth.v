@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2005 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2005 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -18,7 +19,7 @@ module t (/*AUTOARG*/
    wire  a_l = ~a;
    wire  b_oc_l = ~b_oc;
 
-   // Note we must insure that full, parallel, etc, only fire during
+   // Note we must ensure that full, parallel, etc, only fire during
    // edges (not mid-cycle), and must provide a way to turn them off.
    // SystemVerilog provides:  $asserton and $assertoff.
 
@@ -26,7 +27,11 @@ module t (/*AUTOARG*/
 
    always @* begin
       // Note not all tools support directives on casez's
+`ifdef ATTRIBUTES
       case ({a,b_fc}) // synopsys full_case
+`else
+      case ({a,b_fc})
+`endif
 	2'b0_0: ;
 	2'b0_1: ;
 	2'b1_0: ;
@@ -41,7 +46,15 @@ module t (/*AUTOARG*/
    end
 
    always @* begin
+`ifdef ATTRIBUTES
       case (1'b1) // synopsys full_case parallel_case
+`else
+ `ifdef FAILING_FULL
+      case (1'b1) // synopsys parallel_case
+ `else
+      case (1'b1) // synopsys parallel_full
+ `endif
+`endif
 	a: ;
 	b_pc: ;
       endcase

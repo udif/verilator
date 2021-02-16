@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -63,6 +64,18 @@ module Test
      $display("*COVER: Cyc==8");
    cover property (@(posedge clk) disable iff (!toggle) cyc==8)
      $stop;
+
+   always_ff @ (posedge clk) begin
+      labeled_icov: cover (cyc==3 || cyc==4);
+   end
+
+   // Immediate cover
+   labeled_imm0: cover #0 (cyc == 0);
+   labeled_immf: cover final (cyc == 0);
+
+   // Immediate assert
+   labeled_imas: assert #0 (1);
+   assert final (1);
 
    //============================================================
    // Using a macro and generate

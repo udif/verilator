@@ -1,11 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2003 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 use IO::File;
 
@@ -20,7 +21,8 @@ scenarios(vltmt => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
-    v_flags2 => ["--prof-threads"]
+    # Checks below care about thread count, so use 2 (minimum reasonable)
+    v_flags2 => ["--prof-threads --threads 2"]
     );
 
 execute(
@@ -38,7 +40,9 @@ execute(
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
             "$Self->{obj_dir}/profile_threads.dat",
             "--vcd $Self->{obj_dir}/profile_threads.vcd",
-            "> $Self->{obj_dir}/gantt.log"]);
+            "| tee $Self->{obj_dir}/gantt.log"],
+    verilator_run => 1,
+    );
 
 # We should have three lines of gantt chart, each with
 # an even number of mtask-bars (eg "[123--]")
@@ -62,7 +66,7 @@ my $global_mtask_ct = 0;
         if ($this_thread_mtask_ct % 2 != 0) { error("odd number of mtasks found"); }
     }
 }
-if ($gantt_line_ct != 3) { error("wrong number of gantt lines"); }
+if ($gantt_line_ct != 2) { error("wrong number of gantt lines"); }
 if ($global_mtask_ct == 0) { error("wrong number of mtasks, should be > 0"); }
 print "Found $gantt_line_ct lines of gantt data with $global_mtask_ct mtasks\n"
     if $Self->{verbose};

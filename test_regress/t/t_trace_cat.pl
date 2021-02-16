@@ -1,11 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2003-2013 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003-2013 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(vlt_all => 1);
 
@@ -19,7 +20,8 @@ execute(
     check_finished => 1,
     );
 
-system("cat $Self->{obj_dir}/simpart*.vcd > $Self->{obj_dir}/simall.vcd");
+system("cat $Self->{obj_dir}/simpart_0000.vcd "
+       ." $Self->{obj_dir}/simpart_0000_cat*.vcd > $Self->{obj_dir}/simall.vcd");
 
 vcd_identical("$Self->{obj_dir}/simall.vcd",
               $Self->{golden_filename});

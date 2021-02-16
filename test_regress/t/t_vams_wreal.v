@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2011 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `begin_keywords "VAMS-2.3"
 
@@ -105,7 +106,7 @@ module within_range
    parameter real V_MAX = 10;
 
    wreal in_int = vpass - gnd;
-   wire out = (V_MIN <= in_int && in_int <= V_MAX);
+   assign out = (V_MIN <= in_int && in_int <= V_MAX);
 endmodule
 
 
@@ -128,9 +129,9 @@ module first_level
    second_level second_level(.in(in), .out(out));
 endmodule
 
-module second_level
-  (input in,
-   output out);
+module second_level(in, out);
+   input in;
+   output out;
    wreal out;
    assign out = in ? 1.23456: 7.8910;
 endmodule

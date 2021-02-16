@@ -2,22 +2,18 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Emit Verilog code for module tree
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-
+
 #ifndef _V3EMITV_H_
 #define _V3EMITV_H_ 1
 
@@ -29,12 +25,13 @@
 
 //============================================================================
 
-class V3EmitV {
+class V3EmitV final {
 public:
-    static void emitv();
-    static void verilogForTree(AstNode* nodep, std::ostream& os=std::cout);
-    static void verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
-                                    AstSenTree* domainp, bool user3mark);
+    static void verilogForTree(AstNode* nodep, std::ostream& os = std::cout);
+    static void verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,
+                                    int flWidth, AstSenTree* domainp, bool user3mark);
+    static void emitvFiles();
+    static void debugEmitV(const string& stage);
 };
 
-#endif // Guard
+#endif  // Guard

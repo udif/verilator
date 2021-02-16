@@ -3,13 +3,9 @@
 //
 // Copyright 2018-2018 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -21,6 +17,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # ifdef T_DPI_THREADS_COLLIDE
 #  include "Vt_dpi_threads_collide__Dpi.h"
@@ -34,11 +31,12 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpii_sys_task();
-    extern int dpii_failure();
+extern void dpii_sys_task();
+extern int dpii_failure();
 }
 #endif
 
@@ -47,8 +45,9 @@ extern "C" {
 struct state {
     std::atomic<bool> task_is_running;
     std::atomic<int> failure;
-    state() : task_is_running(false)
-            , failure(false) {}
+    state()
+        : task_is_running(false)
+        , failure(false) {}
 };
 
 static state st;
@@ -60,7 +59,8 @@ void dpii_sys_task() {
         st.failure = 1;
         std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() saw threads collide.\n";
     } else {
-        std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() no collision. @" << &st.task_is_running << "\n";
+        std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() no collision. @" << &st.task_is_running
+                  << "\n";
     }
 
     // Spend some time in the DPI call, so that if we can have a collision
@@ -73,6 +73,4 @@ void dpii_sys_task() {
     atomic_exchange(&st.task_is_running, false);
 }
 
-int dpii_failure() {
-    return st.failure;
-}
+int dpii_failure() { return st.failure; }

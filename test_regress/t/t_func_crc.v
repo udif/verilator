@@ -1,4 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2020 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -52,7 +55,7 @@ module t (/*AUTOARG*/
       reg [63:0]   drev;
       begin
 	 drev = reverse(di);
-	 crc  = newcrc(drev, ci);
+	 crc = newcrc(drev, ci);
       end
    endfunction
 

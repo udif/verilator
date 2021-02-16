@@ -3,13 +3,9 @@
 //
 // Copyright 2009-2009 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -19,6 +15,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_string__Dpi.h"
 #elif defined(VCS)
@@ -28,18 +25,18 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern int dpii_string(const char* s);
-
+extern int dpii_string(const char* s);
 }
 #endif
 
 //======================================================================
 
 int dpii_string(const char* s) {
-    printf("dpii_string: %s\n",s);
+    printf("dpii_string: %s\n", s);
     return strlen(s);
 }

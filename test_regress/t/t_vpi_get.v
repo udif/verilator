@@ -4,20 +4,29 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
-import "DPI-C" context function integer mon_check();
+import "DPI-C" context function int mon_check();
+`endif
+
+`ifdef VERILATOR_COMMENTS
+ `define PUBLIC_FLAT_RD /*verilator public_flat_rd*/
+ `define PUBLIC_FLAT_RW /*verilator public_flat_rw @(posedge clk)*/
+`else
+ `define PUBLIC_FLAT_RD
+ `define PUBLIC_FLAT_RW
 `endif
 
 module t (/*AUTOARG*/
    // Inputs
-   input clk                          	/*verilator public_flat_rd		  */,
+   input clk                            `PUBLIC_FLAT_RD,
 
    // test ports
-   input  [15:0] 	testin  	/*verilator public_flat_rd		  */,
-   output [23:0] 	testout 	/*verilator public_flat_rw @(posedge clk) */
+   input  [15:0]        testin          `PUBLIC_FLAT_RD,
+   output [23:0]        testout     `PUBLIC_FLAT_RW
 
    );
 
@@ -27,20 +36,20 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   reg		onebit		/*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
-   reg   	onetwo [1:2]	/*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+   reg          onebit          `PUBLIC_FLAT_RW;
+   reg [2:1]    twoone          `PUBLIC_FLAT_RW;
+   reg          onetwo [1:2]    `PUBLIC_FLAT_RW;
+   reg [2:1]    fourthreetwoone[4:3] `PUBLIC_FLAT_RW;
 
    integer      status;
 
-`ifdef iverilog
+`ifdef IVERILOG
    // stop icarus optimizing signals away
    wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3];
 `endif
 
-   wire         subin  /*verilator public_flat_rd*/;
-   wire         subout /*verilator public_flat_rd*/;
+   wire         subin  `PUBLIC_FLAT_RD;
+   wire         subout `PUBLIC_FLAT_RD;
    sub sub(.*);
 
    // Test loop
@@ -48,7 +57,7 @@ extern "C" int mon_check();
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
-`ifdef iverilog
+`ifdef IVERILOG
      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
@@ -65,7 +74,7 @@ extern "C" int mon_check();
 endmodule : t
 
 module sub (
-   input  subin  /*verilator public_flat_rd*/,
-   output subout /*verilator public_flat_rd*/
+   input  subin  `PUBLIC_FLAT_RD,
+   output subout `PUBLIC_FLAT_RD
 );
 endmodule : sub

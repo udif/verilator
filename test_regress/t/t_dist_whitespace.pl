@@ -1,11 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2003 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(dist => 1);
 
@@ -20,11 +21,25 @@ foreach my $file (sort keys %files) {
     my $contents = file_contents($filename);
     if ($file =~ /\.out$/) {
         # Ignore golden files
+        next;
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
-    } elsif ($contents =~ /[ \t]\n/) {
+        # Ignore binary files
+        next;
+    }
+    if ($contents !~ /\n$/s && $contents ne "") {
+        $warns{$file} = "Missing trailing newline in $file";
+    }
+    if ($contents =~ /[ \t]\n/
+        || $contents =~ m/\n\n+$/) {  # Regexp repeated below
+        my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
+                             || $file =~ m!^README$!
+                             || $file =~ m!/gtkwave/!);
+        next if $eol_ws_exempt;
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-            $contents =~ s/[ \t]+\n/\n/g;
+            my $changes = undef;
+            $changes = 1 if ($contents =~ s/[ \t]+\n/\n/g);
+            $changes = 1 if (!$eol_ws_exempt && $contents =~ s/\n\n+$/\n/g);
+            next if (!$changes);
             $warns{$file} = "Updated whitespace at $file";
             write_wholefile($filename, $contents);
             next;
@@ -40,6 +55,9 @@ foreach my $file (sort keys %files) {
                 $warns{$file} = "Trailing whitespace at $file:$line_no";
                 $warns{$file} .= " (last character is ASCII " . ord(substr($line, -1, 1)) . ")";
             }
+        }
+        if ($contents =~ m/\n\n+$/ && !$eol_ws_exempt) {  # Regexp repeated above
+            $warns{$file} = "Trailing newlines at EOF in $file";
         }
     }
 }
@@ -63,8 +81,8 @@ ok(1);
 
 sub get_manifest_files {
     my $root = shift;
-    `cd $root && make dist-file-list`;
-    my $manifest_files = `cd $root && make dist-file-list`;
+    `cd $root && $ENV{MAKE} dist-file-list`;
+    my $manifest_files = `cd $root && $ENV{MAKE} dist-file-list`;
     $manifest_files =~ s!.*begin-dist-file-list:!!sg;
     $manifest_files =~ s!end-dist-file-list:.*$!!sg;
     print "MF $manifest_files\n" if $Self->{verbose};

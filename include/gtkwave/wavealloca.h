@@ -18,6 +18,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #ifndef WAVE_ALLOCA_H
@@ -33,9 +35,6 @@
 #else
 #include <malloc.h>
 #endif
-#elif defined(_MSC_VER)
-#include <malloc.h>
-#define alloca _alloca
 #endif
 #define wave_alloca alloca
 #endif

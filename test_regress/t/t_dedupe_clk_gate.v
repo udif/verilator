@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
+// SPDX-License-Identifier: CC0-1.0
 
 // Contributed 2012 by Varun Koyyalagunta, Centaur Technology.
 
@@ -19,7 +20,7 @@ endmodule
 
 module flop_gated_latch(q,d,clk,en);
   input d, clk, en;
-  output q;
+  output reg q;
   wire gated_clock;
   clock_gate_latch clock_gate(gated_clock, clk, en);
   always @(posedge gated_clock) begin
@@ -29,7 +30,7 @@ endmodule
 
 module flop_gated_flop(q,d,clk,en);
   input d, clk, en;
-  output q;
+  output reg q;
   wire gated_clock;
   clock_gate_flop clock_gate(gated_clock, clk, en);
   always @(posedge gated_clock) begin
@@ -40,11 +41,11 @@ endmodule
 module clock_gate_latch (gated_clk, clk, clken);
   output gated_clk;
   input clk, clken;
-  reg clken_latched /*verilator clock_enable*/;
+  reg clken_latched;
   assign gated_clk = clk & clken_latched ;
 
   wire clkb = ~clk;
-  always @(clkb or clken)
+  always_latch @(clkb or clken)
     if(clkb) clken_latched = clken;
 
 endmodule

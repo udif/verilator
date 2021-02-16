@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2011 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t_embed1_wrap (/*AUTOARG*/
    // Outputs
@@ -12,13 +13,13 @@ module t_embed1_wrap (/*AUTOARG*/
 
    /*AUTOINOUTMODULE("t_embed1_child")*/
    // Beginning of automatic in/out/inouts (from specific module)
-   output		bit_out;
-   output [30:0]	vec_out;
-   output [123:0]	wide_out;
-   output		did_init_out;
+   output bit           bit_out;
+   output bit [30:0]    vec_out;
+   output bit [123:0]   wide_out;
+   output bit           did_init_out;
    input		clk;
    input		bit_in;
-   input [30:0]		vec_in;
+   input [30:0] 	vec_in;
    input [123:0]	wide_in;
    input		is_ref;
    // End of automatics

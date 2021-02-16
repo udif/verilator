@@ -3,19 +3,15 @@
 #
 # DESCRIPTION: Verilator: Makefile for verilog source
 #
-# Code available from: http://www.veripool.org/verilator
+# Code available from: https://verilator.org
 #
 #*****************************************************************************
 #
-# Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
-#
-# Verilator is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
 
@@ -45,7 +41,9 @@ LINK = @CXX@
 LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 YACC = @YACC@
+OBJCACHE ?= @OBJCACHE@
 
 prefix = @prefix@
 
@@ -60,12 +58,16 @@ pkgdatadir = @pkgdatadir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CPPFLAGS += @CPPFLAGS@
+CFLAGS += @CFLAGS@
+CXXFLAGS += @CXXFLAGS@
 LDFLAGS += @LDFLAGS@
 EXEEXT = @EXEEXT@
 CFG_CXXFLAGS_SRC = @CFG_CXXFLAGS_SRC@
 CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+CFG_LDFLAGS_SRC = @CFG_LDFLAGS_SRC@
+CFG_LIBS = @CFG_LIBS@
 
 #### End of system configuration section. ####
 
@@ -89,12 +91,10 @@ endif
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
 
 # -lfl not needed as Flex invoked with %nowrap option
-# -lstdc++ needed for clang, believed harmless with gcc
-LIBS = -lm -lstdc++
+LIBS = $(CFG_LIBS) -lm
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
-CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
 CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions
@@ -104,6 +104,7 @@ CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
 else
 CPPFLAGS += $(CFG_CXXFLAGS_SRC)
 endif
+LDFLAGS += $(CFG_LDFLAGS_SRC)
 
 CPPFLAGSWALL   = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
@@ -135,10 +136,10 @@ VLCOVGEN = $(srcdir)/vlcovgen
 all: make_info $(TGT)
 
 make_info:
-	@echo "      Compile flags: " $(CXX) ${CPPFLAGS}
+	@echo "      Compile flags: " $(CXX) ${CFLAGS} ${CXXFLAGS} ${CPPFLAGS}
 
 clean mostlyclean distclean maintainer-clean::
-	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen*
 	-rm -f obj_* .objcache*
 
@@ -162,12 +163,13 @@ RAW_OBJS = \
 	V3Branch.o \
 	V3Broken.o \
 	V3CCtors.o \
+	V3CUse.o \
 	V3Case.o \
 	V3Cast.o \
 	V3Cdc.o \
 	V3Changed.o \
+	V3Class.o \
 	V3Clean.o \
-	V3ClkGater.o \
 	V3Clock.o \
 	V3Combine.o \
 	V3Config.o \
@@ -182,6 +184,8 @@ RAW_OBJS = \
 	V3EmitC.o \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
+	V3EmitCMake.o \
+	V3EmitCMain.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \
@@ -191,6 +195,7 @@ RAW_OBJS = \
 	V3FileLine.o \
 	V3Gate.o \
 	V3GenClk.o \
+	V3Global.o \
 	V3Graph.o \
 	V3GraphAlg.o \
 	V3GraphAcyc.o \
@@ -198,6 +203,7 @@ RAW_OBJS = \
 	V3GraphPathChecker.o \
 	V3GraphTest.o \
 	V3Hashed.o \
+	V3HierBlock.o \
 	V3Inline.o \
 	V3Inst.o \
 	V3InstrCount.o \
@@ -206,11 +212,13 @@ RAW_OBJS = \
 	V3LinkCells.o \
 	V3LinkDot.o \
 	V3LinkJump.o \
+	V3LinkInc.o \
 	V3LinkLValue.o \
 	V3LinkLevel.o \
 	V3LinkParse.o \
 	V3LinkResolve.o \
 	V3Localize.o \
+	V3MergeCond.o \
 	V3Name.o \
 	V3Number.o \
 	V3Options.o \
@@ -220,12 +228,15 @@ RAW_OBJS = \
 	V3Partition.o \
 	V3PreShell.o \
 	V3Premit.o \
+	V3ProtectLib.o \
+	V3Randomize.o \
 	V3Reloop.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
+	V3SplitVar.o \
 	V3Stats.o \
 	V3StatsReport.o \
 	V3String.o \
@@ -239,6 +250,7 @@ RAW_OBJS = \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
+	V3Waiver.o \
 	V3Width.o \
 	V3WidthSel.o \
 
@@ -268,7 +280,6 @@ V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
 
 $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
-	-rm -rf $@ $@.exe
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
 
 V3Number_test: V3Number_test.o
@@ -277,24 +288,24 @@ V3Number_test: V3Number_test.o
 #### Modules
 
 %__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
 
 %.o:	%.cpp
-	$(OBJCACHE) ${CXX} ${CPPFLAGSWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 %.o:	%.c
-	$(OBJCACHE) ${CC}  ${CPPFLAGSWALL} -c $<
+	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
 V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
-	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 #### Generated files
 
@@ -304,25 +315,25 @@ serial:: V3Ast__gen_classes.h V3ParseBison.c
 serial_vlcov:: vlcovgen.d
 
 vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
-	$(PERL) $(VLCOVGEN) --srcdir $(srcdir)
+	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
+	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
 
 V3ParseBison.h: V3ParseBison.c
 
 # Have only one output file in this rule to prevent parallel make issues
 V3ParseBison.c: verilog.y $(BISONPRE)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
-	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
+	$(PYTHON3) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
 V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
-	$(PERL) $(FLEXFIX) V3Lexer <$< >$@
+	$(PYTHON3) $(FLEXFIX) V3Lexer <$< >$@
 
 V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} --version

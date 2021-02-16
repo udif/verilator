@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2012 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2012 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 /* Acceptable answer 1
 created tag with scope = top.t.tag
@@ -35,7 +36,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer      cyc=0;
 
    tag tag ();
    b b ();
@@ -48,8 +49,8 @@ module t (/*AUTOARG*/
    always @(posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule
@@ -58,8 +59,8 @@ module b ();
    genvar g;
    generate
       for (g=0; g<2; g++) begin : gen
-	 tag tag ();
-	 c c ();
+         tag tag ();
+         c c ();
       end
    endgenerate
    always @ (t.cyc) begin

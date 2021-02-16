@@ -1,12 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t;
    initial begin
       if (add(3'd1) != 0) $stop;  // Too few args
-      if (add(3'd1, 3'd2, 3'd3) != 0) $stop;	// Too many args
+      if (add(3'd1, 3'd2, 3'd3) != 0) $stop;    // Too many args
       x; // Too few args
       if (hasout(3'd1) != 0) $stop;  // outputs
       //
@@ -19,7 +20,7 @@ module t;
       input [2:0] from1;
       input [2:0] from2;
       begin
-	 add = from1 + from2;
+         add = from1 + from2;
       end
    endfunction
 

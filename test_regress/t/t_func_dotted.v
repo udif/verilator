@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2006 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2006 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -11,6 +12,9 @@ module t (/*AUTOARG*/
    // verilator lint_off MULTIDRIVEN
 
    ma ma0 ();
+
+   initial t.ma0.u_b[0].f(1);
+   initial t.ma0.u_b[0].f(clk);
 
    global_mod #(32'hf00d) global_cell ();
    global_mod #(32'hf22d) global_cell2 ();
@@ -49,17 +53,22 @@ module t (/*AUTOARG*/
 
 endmodule
 
-`ifdef USE_INLINE_MID
- `define INLINE_MODULE /*verilator inline_module*/
- `define INLINE_MID_MODULE /*verilator no_inline_module*/
-`else
- `ifdef USE_INLINE
+`ifdef ATTRIBUTES
+ `ifdef USE_INLINE_MID
   `define INLINE_MODULE /*verilator inline_module*/
-  `define INLINE_MID_MODULE /*verilator inline_module*/
+  `define INLINE_MID_MODULE /*verilator no_inline_module*/
  `else
-  `define INLINE_MODULE /*verilator public_module*/
-  `define INLINE_MID_MODULE /*verilator public_module*/
+  `ifdef USE_INLINE
+   `define INLINE_MODULE /*verilator inline_module*/
+   `define INLINE_MID_MODULE /*verilator inline_module*/
+  `else
+   `define INLINE_MODULE /*verilator public_module*/
+   `define INLINE_MID_MODULE /*verilator public_module*/
+  `endif
  `endif
+`else
+ `define INLINE_MODULE
+ `define INLINE_MID_MODULE
 `endif
 
 module global_mod;
@@ -138,3 +147,13 @@ module mc ();
       mc.checkName (mc.getName(1'b0));
    end
 endmodule
+
+module b;
+
+   function void f(bit v);
+      $display("%m");
+   endfunction : f;
+
+endmodule : b
+
+bind ma b u_b[0:1];

@@ -1,12 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 // Try inline config
 `ifdef verilator
   `verilator_config
-    lint_off -msg CASEX -file "t/t_vlt_warn.v"
+    lint_off -rule CASEX -file "t/t_vlt_warn.v"
   `verilog
 `endif
 

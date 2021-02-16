@@ -2,19 +2,15 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: DAG Path Checking
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -33,17 +29,17 @@
 ///
 /// The graph (or at least, the subset the algorithm sees through
 /// edgeFuncp) must not change during the lifetime of the checker.
-class GraphPathChecker : GraphAlg<const V3Graph> {
+class GraphPathChecker final : GraphAlg<const V3Graph> {
     // Count "generations" which increases on operations that scan through
     // the graph. Each node is marked with the last generation that scanned
     // it, to enable asserting there are no cycles, and to avoid recursing
     // through the same node twice while searching for a path.
-    vluint64_t m_generation;
+    vluint64_t m_generation = 0;
 
- public:
+public:
     // CONSTRUCTORS
-    GraphPathChecker(const V3Graph* graphp,
-                     V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
+    explicit GraphPathChecker(const V3Graph* graphp,
+                              V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
     ~GraphPathChecker();
 
     // METHODS
@@ -54,10 +50,9 @@ class GraphPathChecker : GraphAlg<const V3Graph> {
     // removed. Detect such an edge.
     bool isTransitiveEdge(const V3GraphEdge* edgep);
 
- private:
-    bool pathExistsInternal(const V3GraphVertex* ap,
-                            const V3GraphVertex* bp,
-                            unsigned* costp = NULL);
+private:
+    bool pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
+                            unsigned* costp = nullptr);
     void initHalfCriticalPaths(GraphWay way, bool checkOnly);
     void incGeneration() { ++m_generation; }
 

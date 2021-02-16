@@ -1,9 +1,18 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2017 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/);
+   int one =
+`ifdef verilator
+       $c32(1)
+`else
+       1
+`endif
+       ;
+
    initial begin
       $display("Merge:");
       $write("This ");
@@ -11,8 +20,8 @@ module t (/*AUTOARG*/);
       $display("merge");
 
       $display("f");
-      $display(" a=%m");
-      $display(" b=%m");
+      $write(" 1=%0d a=%m 1=%0d", one, one);
+      $display(" 1=%0d b=%m 1=%0d", one, one);
       $display(" pre");
       $display(" t=%0d",$time);
       $display(" t2=%0d",$time);
@@ -39,6 +48,19 @@ module t (/*AUTOARG*/);
       $write(" t=%0d t2=%0d t3=%0d t4=%0d t5=%0d",$time,$time,$time,$time,$time);
       $display("mm");
 
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("very very very very very very very very very very very very very very very very very very very very very very");
+      $display("%0d%0d%0d%0d%0d %0d%0d%0d%0d%0d",
+               one, one, one, one, one,
+               one, one, one, one, one);
+      $display("%0d%0d%0d%0d%0d %0d%0d%0d%0d%0d",
+               one, one, one, one, one,
+               one, one, one, one, one);
       $write("\n*-* All Finished *-*\n");
       $finish;
    end

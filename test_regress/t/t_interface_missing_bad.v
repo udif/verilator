@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2015 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 
 // Interface intentionally not defined
 //interface foo_intf;
@@ -21,8 +22,8 @@ module t (/*AUTOARG*/);
    foo_mod
      foo_mod
        (
-	.foo (the_foo)
-	);
+        .foo (the_foo)
+        );
 
    initial begin
       $write("*-* All Finished *-*\n");
@@ -30,4 +31,3 @@ module t (/*AUTOARG*/);
    end
 
 endmodule
-

@@ -4,11 +4,12 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
-import "DPI-C" context function integer mon_check();
+import "DPI-C" context function int mon_check();
 `endif
 
 module t (/*AUTOARG*/
@@ -28,7 +29,9 @@ extern "C" int mon_check();
    reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
    reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
 
-   reg [61:0] 	quads[3:2]	/*verilator public_flat_rw @(posedge clk) */;
+   // verilator lint_off LITENDIAN
+   reg [0:61] 	quads[2:3]	/*verilator public_flat_rw @(posedge clk) */;
+   // verilator lint_on LITENDIAN
 
    reg [31:0] 	   count	/*verilator public_flat_rd */;
    reg [31:0] 	   half_count	/*verilator public_flat_rd */;
@@ -56,11 +59,11 @@ extern "C" int mon_check();
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
-`ifdef iverilog
-     status = $mon_check();
+`ifdef IVERILOG
+      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-     status = mon_check();
+      status = mon_check();
 `endif
       if (status!=0) begin
 	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
@@ -90,7 +93,7 @@ extern "C" int mon_check();
 
    genvar i;
    generate
-   for (i=1; i<=128; i=i+1) begin : arr
+   for (i=1; i<=6; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
    end endgenerate
 
@@ -99,7 +102,7 @@ endmodule : t
 module sub;
    reg subsig1 /*verilator public_flat_rd*/;
    reg subsig2 /*verilator public_flat_rd*/;
-`ifdef iverilog
+`ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2;
 `endif

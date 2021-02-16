@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t ();
 
@@ -23,7 +24,7 @@ module t ();
    function integer func (output bit [PAYLOAD_MAX_BITS-1:0] data);
       /*verilator no_inline_task*/
       data = {PAYLOAD_MAX_BITS{1'b1}};
-      return (1);
+      return 1;
    endfunction
 
 endmodule

@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/);
 
@@ -28,11 +29,26 @@ module sub;
    assign mixed[2] = 0;
    assign mixed[0] = 0;
 
+   wire [2:0] cmdln_off;  // Suppressed by command line
+   assign cmdln_off = 0;
+
    localparam THREE = 3;
+
+   parameter UNUSED_P = 1;
+   localparam UNUSED_LP = 2;
+
+   genvar     unused_gv;
+   genvar     ok_gv;
 
    initial begin
       if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
       if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
       if (0 && mixed[1:0] != 0) begin end
    end
+
+   generate
+      if (0)
+        for (ok_gv = 0; ok_gv < 1; ++ok_gv) begin end
+   endgenerate
+
 endmodule

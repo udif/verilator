@@ -3,13 +3,9 @@
 //
 // Copyright 2010-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -29,56 +25,60 @@
 // __FILE__ is too long
 #define FILENM "t_vpi_unimpl.cpp"
 
-#define DEBUG if (0) printf
+#define DEBUG \
+    if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
-
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
 
 //======================================================================
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
-               FILENM,__LINE__, (got), (exp)); \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
+#define CHECK_RESULT_Z(got) \
+    if (got) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        std::cout<<std::dec<<"%Error: "<<FILENM<<":"<<__LINE__  \
-                  <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<std::endl;   \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        std::cout<<std::dec<<"%Error: "<<FILENM<<":"<<__LINE__<<std::hex \
-                 <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<std::endl;    \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got),(exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
-               FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
+    if (strcmp((got), (exp))) { \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
     }
 
-#define CHECK_RESULT_CSTR_STRIP(got, exp) \
-    CHECK_RESULT_CSTR(got+strspn(got, " "), exp)
+#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 int _mon_check_unimpl(p_cb_data cb_data) {
     static TestVpiHandle cb, clk_h;
+    vpiHandle handle;
+    const char* cp = nullptr;
     if (cb_data) {
         // this is the callback
         s_vpi_error_info info;
@@ -131,6 +131,47 @@ int _mon_check_unimpl(p_cb_data cb_data) {
         CHECK_RESULT(callback_count, 16);
         vpi_handle_by_multi_index(NULL, 0, NULL);
         CHECK_RESULT(callback_count, 17);
+        vpi_control(0);
+        CHECK_RESULT(callback_count, 18);
+
+        s_vpi_time time_s;
+        time_s.type = 0;
+        vpi_get_time(NULL, &time_s);
+        CHECK_RESULT(callback_count, 19);
+
+        handle = vpi_put_value(NULL, NULL, NULL, 0);
+        CHECK_RESULT(callback_count, 20);
+        CHECK_RESULT(handle, 0);
+
+        handle = vpi_handle(0, NULL);
+        CHECK_RESULT(callback_count, 21);
+        CHECK_RESULT(handle, 0);
+
+        vpi_iterate(0, NULL);
+        CHECK_RESULT(callback_count, 22);
+
+        handle = vpi_register_cb(NULL);
+        CHECK_RESULT(callback_count, 23);
+        CHECK_RESULT(handle, 0);
+        s_cb_data cb_data_s;
+        cb_data_s.reason = 0;  // Bad
+        handle = vpi_register_cb(&cb_data_s);
+        CHECK_RESULT(callback_count, 24);
+        CHECK_RESULT(handle, 0);
+
+        (void)vpi_get_str(vpiRange, clk_h);  // Bad type
+        CHECK_RESULT(callback_count, 25);
+
+        // Supported but illegal tests:
+        // Various checks that guarded passing NULL handles
+        handle = vpi_scan(NULL);
+        CHECK_RESULT(handle, 0);
+        (void)vpi_get(vpiType, NULL);
+        (void)vpi_get(vpiDirection, NULL);
+        (void)vpi_get(vpiVector, NULL);
+        cp = vpi_get_str(vpiType, NULL);
+        CHECK_RESULT_Z(cp);
+        vpi_release_handle(NULL);
     }
     return 0;  // Ok
 }
@@ -143,11 +184,8 @@ int mon_check() {
 
 //======================================================================
 
-
-double sc_time_stamp() {
-    return main_time;
-}
-int main(int argc, char **argv, char **env) {
+double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
@@ -157,9 +195,9 @@ int main(int argc, char **argv, char **env) {
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
-# ifdef TEST_VERBOSE
+#ifdef TEST_VERBOSE
     Verilated::scopesDump();
-# endif
+#endif
 #endif
 
 #if VM_TRACE
@@ -167,7 +205,7 @@ int main(int argc, char **argv, char **env) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
-    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
     topp->eval();
@@ -177,16 +215,16 @@ int main(int argc, char **argv, char **env) {
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
-        //VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
+        // VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
         topp->clk = !topp->clk;
-        //mon_do();
+        // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump(main_time);
 #endif
     }
-    CHECK_RESULT(callback_count, 17);
+    if (!callback_count) vl_fatal(FILENM, __LINE__, "main", "%Error: never got callbacks");
     if (!Verilated::gotFinish()) {
-        vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
@@ -194,6 +232,6 @@ int main(int argc, char **argv, char **env) {
     if (tfp) tfp->close();
 #endif
 
-    delete topp; topp=NULL;
+    VL_DO_DANGLING(delete topp, topp);
     exit(0L);
 }

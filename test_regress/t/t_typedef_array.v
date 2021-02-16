@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2017 by James Pallister.
+// SPDX-License-Identifier: CC0-1.0
 
 typedef logic logic_alias_t;
 
@@ -23,4 +24,3 @@ module t;
       $finish;
    end
 endmodule
-

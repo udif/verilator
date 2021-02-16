@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003-2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -56,7 +57,7 @@ module t (/*AUTOARG*/
 #endif
    bool m_did_ctor;
    vluint32_t my_function() {
-       if (!m_did_ctor) vl_fatal(__FILE__,__LINE__,__FILE__,"`systemc_ctor didn't work");
+       if (!m_did_ctor) vl_fatal(__FILE__, __LINE__, __FILE__, "`systemc_ctor didn't work");
        return 1;
    }
  `systemc_imp_header

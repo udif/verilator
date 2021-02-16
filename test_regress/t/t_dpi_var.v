@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -51,7 +52,11 @@ module t (/*AUTOARG*/
 
 endmodule
 
+`ifdef ATTRIBUTES
 import "DPI-C" context function void mon_scope_name (input string formatted /*verilator sformat*/ );
+`else
+import "DPI-C" context function void mon_scope_name (input string formatted);
+`endif
 import "DPI-C" context function void mon_register_b(string name, int isOut);
 import "DPI-C" context function void mon_register_done();
 import "DPI-C" context function void mon_eval();
@@ -68,9 +73,15 @@ module sub (/*AUTOARG*/
   void mon_register_a(const char* namep, void* sigp, bool isOut);
 `verilog
 
+`ifdef ATTRIBUTES
    input int in   /*verilator public_flat_rd*/;
    output int fr_a /*verilator public_flat_rw @(posedge t.monclk)*/;
    output int fr_b /*verilator public_flat_rw @(posedge t.monclk)*/;
+`else
+   input int in;
+   output int fr_a;
+   output int fr_b;
+`endif
    output int fr_chk;
 
    always @* fr_chk = in + 1;

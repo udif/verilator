@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t ();
 
@@ -11,5 +12,11 @@ module t ();
    wire [4:0] suma = five + 1'b1;
    wire [4:0] sumb = 1'b1 + five;
    wire [4:0] sumc = five - 1'b1;
+
+   // Relatively harmless < or <= compared with something less wide
+   localparam [1:0] THREE = 3;
+   int        a;
+   initial for (a = 0; a < THREE; ++a) $display(a);
+   initial for (a = 0; a <= THREE; ++a) $display(a);
 
 endmodule

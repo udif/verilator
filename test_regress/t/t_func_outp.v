@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (clk);
 
@@ -47,9 +48,9 @@ endmodule // mytop
 
 module inv(
              input [ 7:0 ]  a,
-             output  [ 7:0 ]  z
+             output wire [ 7:0 ]  z
              );
-   wire [7:0] 		      z = ~a;
+   assign z = ~a;
 endmodule
 
 
@@ -57,11 +58,10 @@ module ftest(
              input [ 7:0 ]  a,
                             b,   // Test legal syntax
              input clk,
-             output  [ 7:0 ]  z
+             output reg [ 7:0 ]  z
              );
 
    wire [7:0] 		      zi;
-   reg [7:0] 		      z;
 
    inv u1 (.a(myadd(a,b)),
 	   .z(zi));

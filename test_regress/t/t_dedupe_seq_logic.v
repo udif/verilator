@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
+// SPDX-License-Identifier: CC0-1.0
 
 // Contributed 2012 by Varun Koyyalagunta, Centaur Technology.
 //
@@ -105,7 +106,7 @@ module rlr(sum,a,b,c,d,clk);
 endmodule
 
 module add(sum,x,y,clk);
-  output sum;
+  output reg sum;
   input x,y,clk;
   reg t1,t2;
   always @(posedge clk) begin
@@ -114,7 +115,7 @@ module add(sum,x,y,clk);
 endmodule
 
 module add2(sum,x,y,clk);
-  output sum;
+  output reg sum;
   input x,y,clk;
   reg t1,t2;
   always @(posedge clk) begin

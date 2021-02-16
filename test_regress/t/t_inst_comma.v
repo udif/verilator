@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2015 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2015 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -62,5 +63,5 @@ module sub (input [7:0] allbits, input [1:0] onebit, output bitout);
    `INLINE_MODULE
      parameter integer P = 0;
    initial if (P != 1) $stop;
-   wire bitout = (^ onebit) ^ (^ allbits);
+   assign bitout = (^ onebit) ^ (^ allbits);
 endmodule

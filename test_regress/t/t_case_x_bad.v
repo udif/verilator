@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2005-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2005-2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -11,12 +12,12 @@ module t (/*AUTOARG*/
    input [3:0] value;
    always @ (/*AS*/value) begin
       casex (value)
-	default: $stop;
+        default: $stop;
       endcase
       case (value)
-	4'b0000: $stop;
-	4'b1xxx: $stop;
-	default: $stop;
+        4'b0000: $stop;
+        4'b1xxx: $stop;
+        default: $stop;
       endcase
    end
 

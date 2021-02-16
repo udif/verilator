@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2018 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2018 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -37,13 +38,17 @@ module Test
 `ifdef FAIL_ASSERT_1
    assert property (@(posedge clk) cyc==3)
      else $display("cyc != 3, cyc == %0d", cyc);
+   assume property (@(posedge clk) cyc==3)
+     else $display("cyc != 3, cyc == %0d", cyc);
 `endif
 
 `ifdef FAIL_ASSERT_2
    assert property (@(posedge clk) cyc!=3);
+   assume property (@(posedge clk) cyc!=3);
 `endif
 
    assert property (@(posedge clk) cyc < 100);
+   assume property (@(posedge clk) cyc < 100);
 
    restrict property (@(posedge clk) cyc==1);  // Ignored in simulators
 
