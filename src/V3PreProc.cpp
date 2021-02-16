@@ -137,7 +137,7 @@ public:
         ps_INCNAME,
         ps_ERRORNAME,
         ps_JOIN,
-		ps_SYNTH_OFF,
+        ps_SYNTH_OFF,
         ps_STRIFY
     };
     static const char* procStateName(ProcState s) {
@@ -443,8 +443,8 @@ void V3PreProcImp::comment(const string& text) {
         synth = true;
     } else if (0 == (strncmp(cp, "ambit synthesis", strlen("ambit synthesis")))) {
         cp += strlen("ambit synthesis");
-		synth = true;
-    } else if (0==(strncmp(cp,"synthesis",strlen("synthesis")))) {
+        synth = true;
+    } else if (0 == (strncmp(cp, "synthesis", strlen("synthesis")))) {
         cp += strlen("synthesis");
         synth = true;
     } else {
@@ -458,25 +458,26 @@ void V3PreProcImp::comment(const string& text) {
     // cmd now is comment without extra spaces and "verilator" prefix
 
     if (synth) {
-        if (commentTokenMatch(cmd/*ref*/, "translate_off")) {
-            if (state()==ps_SYNTH_OFF) {
+        if (commentTokenMatch(cmd /*ref*/, "translate_off")) {
+            if (state() == ps_SYNTH_OFF) {
                 v3warn(USERWARN, "Recursive '// synthesis translate_off' declaration");
             } else {
                 parsingOff();
                 statePush(ps_SYNTH_OFF);
             }
         }
-	    if (commentTokenMatch(cmd/*ref*/, "translate_on")) {
-	    	if (state()!=ps_SYNTH_OFF) {
-	    		v3warn(USERWARN, "Recursive '// synthesis translate_on' without '// synthesis translate_off' declaration");
-	    	} else {
-	    		parsingOn();
-	        	statePop();
-	    	}
-	    }
+        if (commentTokenMatch(cmd /*ref*/, "translate_on")) {
+            if (state() != ps_SYNTH_OFF) {
+                v3warn(USERWARN, "Recursive '// synthesis translate_on' without '// synthesis "
+                                 "translate_off' declaration");
+            } else {
+                parsingOn();
+                statePop();
+            }
+        }
         if (v3Global.opt.assertOn()) {
             // one_hot, one_cold, (full_case, parallel_case)
-            if (commentTokenMatch(cmd/*ref*/, "full_case")) {
+            if (commentTokenMatch(cmd /*ref*/, "full_case")) {
                 if (!printed) insertUnreadback("/*verilator full_case*/");
             }
             if (commentTokenMatch(cmd /*ref*/, "parallel_case")) {
