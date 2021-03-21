@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,20 +12,25 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Common include for OS portability (verilated & verilator)
+/// \brief Verilated/Verilator common header for OS portability
 ///
-///     This header is used by both the Verilator source code (run on the
-///     build and host system), and the Verilated output (run on the target
-///     system).  Code needed by only the host system goes into
-///     config_build.h.in, code needed by Verilated code only goes into
-///     verilated.h, and code needed by both goes here (verilatedos.h).
+/// This header is included by user wrappers and defines the Verilated
+/// public-facing API.
 ///
-/// Code available from: https://verilator.org
+/// User wrapper code does not generally need to include this, instead
+/// include verilated.h.
+///
+/// This header is used by both the Verilator source code (run on the build
+/// and host system), and the Verilated output (run on the target system).
+///
+/// Configuration code needed by only the host system is in
+/// config_build.h.in, code needed by Verilated code only is in
+/// verilated.h, and code needed by both is here (verilatedos.h).
 ///
 //*************************************************************************
 
-#ifndef _VERILATEDOS_H_
-#define _VERILATEDOS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATEDOS_H_
+#define VERILATOR_VERILATEDOS_H_
 
 // Current clang-format versions botch #ifdef inclusion, so
 // clang-format off
@@ -39,6 +46,9 @@
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
+# if !defined(_WIN32) && !defined(__MINGW32__)
+#  define VL_ATTR_WEAK __attribute__((weak))
+# endif
 # define VL_FUNC __func__
 # if defined(__clang__) && defined(VL_THREADED)
 #  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
@@ -87,6 +97,9 @@
 #ifndef VL_ATTR_UNUSED
 # define VL_ATTR_UNUSED  ///< Function that may be never used
 #endif
+#ifndef VL_ATTR_WEAK
+# define VL_ATTR_WEAK  ///< Function external that is optionally defined
+#endif
 #ifndef VL_FUNC
 # define VL_FUNC "__func__"  ///< Name of current function for error macros
 #endif
@@ -107,15 +120,16 @@
 # define VL_LIKELY(x) (!!(x))  ///< Boolean expression more often true than false
 # define VL_UNLIKELY(x) (!!(x))  ///< Boolean expression more often false than true
 #endif
-# define VL_UNCOVERABLE(x) VL_UNLIKELY(x)  ///< Boolean expression never hit by users (no coverage)
+/// Boolean expression never hit by users (branch coverage disabled)
+# define VL_UNCOVERABLE(x) VL_UNLIKELY(x)
 #ifndef VL_UNREACHABLE
 # define VL_UNREACHABLE  ///< Point that may never be reached
 #endif
 #ifndef VL_PREFETCH_RD
-# define VL_PREFETCH_RD(p)  ///< Prefetch data with read intent
+# define VL_PREFETCH_RD(p)  ///< Prefetch pointed-to-data with read intent
 #endif
 #ifndef VL_PREFETCH_RW
-# define VL_PREFETCH_RW(p)  ///< Prefetch data with read/write intent
+# define VL_PREFETCH_RW(p)  ///< Prefetch pointed-to-data with read/write intent
 #endif
 
 #if defined(VL_THREADED) && !defined(VL_CPPCHECK)
@@ -128,26 +142,38 @@
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
 # endif
-# define VL_THREAD_LOCAL thread_local  ///< Use new C++ static local thread
+# define VL_THREAD_LOCAL thread_local  ///< "thread_local" when supported
 #else
-# define VL_THREAD_LOCAL  ///< Use new C++ static local thread
+# define VL_THREAD_LOCAL  ///< "thread_local" when supported
 #endif
 
-#define VL_THREAD  ///< Deprecated
-#define VL_STATIC_OR_THREAD static  ///< Deprecated
+#ifndef VL_NO_LEGACY
+# define VL_THREAD  // Deprecated
+# define VL_STATIC_OR_THREAD static  // Deprecated
+#endif
 
-#define VL_PURE  ///< Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#define VL_MT_SAFE  ///< Comment tag that function is threadsafe when VL_THREADED
-#define VL_MT_SAFE_POSTINIT  ///< Comment tag that function is threadsafe when VL_THREADED, only
-                             ///< during normal operation (post-init)
-#define VL_MT_UNSAFE  ///< Comment tag that function is not threadsafe when VL_THREADED
-#define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
-                          ///< protected to make sure single-caller
+/// Comment tag that Function is pure (and thus also VL_MT_SAFE)
+#define VL_PURE
+/// Comment tag that function is threadsafe when VL_THREADED
+#define VL_MT_SAFE
+/// Comment tag that function is threadsafe when VL_THREADED, only
+/// during normal operation (post-init)
+#define VL_MT_SAFE_POSTINIT
+/// Clang threadsafe and uses given mutex
+#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+/// Comment tag that function is not threadsafe when VL_THREADED
+#define VL_MT_UNSAFE
+/// Comment tag that function is not threadsafe when VL_THREADED,
+/// protected to make sure single-caller
+#define VL_MT_UNSAFE_ONE
 
-#define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant (deprecated)
+#ifndef VL_NO_LEGACY
+# define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
+#endif
 
-// This is not necessarily the same as #UL, depending on what the IData typedef is.
-#define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
+/// Convert argument to IData
+/// This is not necessarily the same as #UL, depending on what the IData typedef is.
+#define VL_UL(c) (static_cast<IData>(c##UL))
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
@@ -184,16 +210,18 @@
 // C++-2011
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+# ifndef VL_NO_LEGACY
 // These are deprecated historical defines. We leave them in case users referenced them.
-# define VL_EQ_DELETE = delete
-# define vl_unique_ptr std::unique_ptr
-# define vl_unordered_map std::unordered_map
-# define vl_unordered_set std::unordered_set
-# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
-# define VL_INCLUDE_UNORDERED_SET <unordered_set>
-# define VL_FINAL final
-# define VL_MUTABLE mutable
-# define VL_OVERRIDE override
+#  define VL_EQ_DELETE = delete
+#  define vl_unique_ptr std::unique_ptr
+#  define vl_unordered_map std::unordered_map
+#  define vl_unordered_set std::unordered_set
+#  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+#  define VL_INCLUDE_UNORDERED_SET <unordered_set>
+#  define VL_FINAL final
+#  define VL_MUTABLE mutable
+#  define VL_OVERRIDE override
+# endif
 #else
 # error "Verilator requires a C++11 or newer compiler"
 #endif
@@ -358,11 +386,14 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
 #define VL_IDATASIZE 32  ///< Bits in a IData / word
-#define VL_WORDSIZE VL_IDATASIZE  ///< Legacy define
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
 #define VL_EDATASIZE 32  ///< Bits in a EData (WData entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
+
+#ifndef VL_NO_LEGACY
+# define VL_WORDSIZE VL_IDATASIZE  // Legacy define
+#endif
 
 /// Bytes this number of bits needs (1 bit=1 byte)
 #define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)
@@ -374,10 +405,10 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 //=========================================================================
 // Class definition helpers
 
-/// Used to indicate a base class, e.g. cannot label "class final"
+/// Comment tag to indicate a base class, e.g. cannot label "class final"
 #define VL_NOT_FINAL
 
-/// Used to declare a class as uncopyable; put after a private:
+/// Declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete
@@ -466,12 +497,18 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #endif
 
 //=========================================================================
-// String related OS-specific functions
+// String/time related OS-specific functions
 
 #ifdef _MSC_VER
 # define VL_STRCASECMP _stricmp
 #else
 # define VL_STRCASECMP strcasecmp
+#endif
+
+#ifdef _MSC_VER
+# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
+#else
+# define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
 
 //=========================================================================

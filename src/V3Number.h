@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3NUMBER_H_
-#define _V3NUMBER_H_ 1
+#ifndef VERILATOR_V3NUMBER_H_
+#define VERILATOR_V3NUMBER_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -312,8 +312,8 @@ public:
     // STATICS
     static int log2b(uint32_t num);
 
-    typedef V3Number& (*UniopFuncp)(V3Number&);
-    typedef V3Number& (*BiopFuncp)(V3Number&, V3Number&);
+    using UniopFuncp = V3Number& (*)(V3Number&);
+    using BiopFuncp = V3Number& (*)(V3Number&, V3Number&);
 
     // MATH
     // "this" is the output, as we need the output width before some computations

@@ -184,9 +184,9 @@ private:
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
     // All activity numbers applying to a given trace
-    typedef std::set<uint32_t> ActCodeSet;
+    using ActCodeSet = std::set<uint32_t>;
     // For activity set, what traces apply
-    typedef std::multimap<ActCodeSet, TraceTraceVertex*> TraceVec;
+    using TraceVec = std::multimap<ActCodeSet, TraceTraceVertex*>;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -300,7 +300,7 @@ private:
             nextp = itp->verticesNextp();
             if (TraceActivityVertex* const vtxp = dynamic_cast<TraceActivityVertex*>(itp)) {
                 // Leave in the always vertex for later use.
-                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) { vtxp->unlinkDelete(&m_graph); }
+                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) vtxp->unlinkDelete(&m_graph);
             }
         }
     }
@@ -646,7 +646,7 @@ private:
                         }
                     }
                     ifp = new AstIf(flp, condp, nullptr, nullptr);
-                    if (!always) { ifp->branchPred(VBranchPred::BP_UNLIKELY); }
+                    if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += EmitCBaseCounterVisitor(ifp).count();
                     prevActSet = &actSet;

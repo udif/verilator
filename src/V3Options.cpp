@@ -54,7 +54,7 @@
 class V3OptionsImp final {
 public:
     // TYPES
-    typedef std::map<const string, std::set<string>> DirMap;  // Directory listing
+    using DirMap = std::map<const string, std::set<std::string>>;  // Directory listing
 
     // STATE
     std::list<string> m_allArgs;  // List of every argument encountered
@@ -1045,6 +1045,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
+                fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
                 m_inhibitSim = flag;
             } else if (onoff(sw, "-lint-only", flag /*ref*/)) {
                 m_lintOnly = flag;
@@ -1087,6 +1088,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_quietExit = flag;
             } else if (onoff(sw, "-relative-cfuncs", flag /*ref*/)) {
                 m_relativeCFuncs = flag;
+                if (!m_relativeCFuncs)
+                    fl->v3warn(DEPRECATED,
+                               "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
             } else if (onoff(sw, "-relative-includes", flag /*ref*/)) {
                 m_relativeIncludes = flag;
             } else if (onoff(sw, "-report-unoptflat", flag /*ref*/)) {
@@ -1158,7 +1162,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
                     case 'm': m_oAssemble = flag; break;
-                    //    n o
+                    //    n
+                    case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -1370,7 +1375,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 string msg = sw + strlen("-Werror-");
                 V3ErrorCode code(msg.c_str());
                 if (code == V3ErrorCode::EC_ERROR) {
-                    if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                    if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                 } else {
                     V3Error::pretendError(code, true);
                 }
@@ -1403,7 +1408,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     string msg = sw + strlen("-Wwarn-");
                     V3ErrorCode code(msg.c_str());
                     if (code == V3ErrorCode::EC_ERROR) {
-                        if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                        if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                     } else {
                         FileLine::globalWarnOff(code, false);
                         V3Error::pretendError(code, false);
@@ -1443,8 +1448,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-rr")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-quiet-exit")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;
@@ -1865,6 +1868,7 @@ void V3Options::optimize(int level) {
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oConstBitOpTree = flag;
     m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;

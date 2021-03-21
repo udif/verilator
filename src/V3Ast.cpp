@@ -120,9 +120,9 @@ string AstNode::encodeName(const string& namein) {
             // We also do *NOT* use __DOT__ etc, as we search for those
             // in some replacements, and don't want to mangle the user's names.
             unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
-            char hex[10];
-            sprintf(hex, "__0%02X", val);
-            out += hex;
+            std::stringstream hex;
+            hex << std::setfill('0') << std::setw(2) << std::hex << val;
+            out += "__0" + hex.str();
         }
     }
     // Shorten names
@@ -1104,7 +1104,7 @@ void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) con
         os << indent << "     ";
         dumpPtrs(os);
     }
-    if (s_debugFileline >= 9) { os << fileline()->warnContextSecondary(); }
+    if (s_debugFileline >= 9) os << fileline()->warnContextSecondary();
     if (maxDepth == 1) {
         if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";
     } else {

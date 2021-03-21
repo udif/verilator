@@ -14,10 +14,10 @@
 //
 //*************************************************************************
 
-#ifndef _V3ASTNODES_H_
-#define _V3ASTNODES_H_ 1
+#ifndef VERILATOR_V3ASTNODES_H_
+#define VERILATOR_V3ASTNODES_H_
 
-#ifndef _V3AST_H_
+#ifndef VERILATOR_V3AST_H_
 #error "Use V3Ast.h as the include"
 #endif
 
@@ -290,13 +290,14 @@ public:
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const override { return "/*class*/package"; }
     virtual const char* broken() const override;
+    virtual bool timescaleMatters() const override { return false; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
 };
 
 class AstClass final : public AstNodeModule {
     // TYPES
-    typedef std::map<const string, AstNode*> MemberNameMap;
+    using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
@@ -317,6 +318,7 @@ public:
         BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
+    virtual bool timescaleMatters() const override { return false; }
     // op1/op2/op3 in AstNodeModule
     AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
@@ -539,8 +541,8 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
-        if (m_keyDTypep && m_keyDTypep->clonep()) { m_keyDTypep = m_keyDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+        if (m_keyDTypep && m_keyDTypep->clonep()) m_keyDTypep = m_keyDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
@@ -641,7 +643,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
@@ -760,7 +762,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
@@ -971,7 +973,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstConstDType* sp = static_cast<const AstConstDType*>(samep);
@@ -1140,7 +1142,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
@@ -1217,8 +1219,8 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_typedefp && m_typedefp->clonep()) { m_typedefp = m_typedefp->clonep(); }
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_typedefp && m_typedefp->clonep()) m_typedefp = m_typedefp->clonep();
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstRefDType* asamep = static_cast<const AstRefDType*>(samep);
@@ -1486,7 +1488,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstEnumDType* sp = static_cast<const AstEnumDType*>(samep);
@@ -1595,8 +1597,8 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
     // Special operators
-    static AstNode*
-    baseFromp(AstNode* nodep);  ///< What is the base variable (or const) this dereferences?
+    // Return base var (or const) nodep dereferences
+    static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 
 class AstAssocSel final : public AstNodeSel {
@@ -2047,7 +2049,7 @@ public:
         , m_origName{name} {
         init();
         combineType(type);
-        if (examplep->childDTypep()) { childDTypep(examplep->childDTypep()->cloneTree(true)); }
+        if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
         dtypeFrom(examplep);
         m_declKwd = examplep->declKwd();
     }
@@ -2559,6 +2561,7 @@ public:
         , m_isProgram{program} {}
     ASTNODE_NODE_FUNCS(Module)
     virtual string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    virtual bool timescaleMatters() const override { return true; }
 };
 
 class AstNotFoundModule final : public AstNodeModule {
@@ -2568,6 +2571,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(NotFoundModule)
     virtual string verilogKwd() const override { return "/*not-found-*/ module"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackage final : public AstNodeModule {
@@ -2577,6 +2581,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Package)
     virtual string verilogKwd() const override { return "package"; }
+    virtual bool timescaleMatters() const override { return !isDollarUnit(); }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
@@ -2588,6 +2593,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Primitive)
     virtual string verilogKwd() const override { return "primitive"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackageExportStarStar final : public AstNode {
@@ -2653,6 +2659,9 @@ public:
     AstIface(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Iface)
+    // Interfaces have `timescale applicability but lots of code seems to
+    // get false warnings if we enable this
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstMemberSel final : public AstNodeMath {
@@ -2677,7 +2686,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(MemberSel)
     virtual void cloneRelink() override {
-        if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); }
+        if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
     }
     virtual const char* broken() const override {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
@@ -4980,7 +4989,7 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    typedef std::map<uint32_t, AstInitItem*> KeyItemMap;
+    using KeyItemMap = std::map<uint32_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
@@ -7294,7 +7303,7 @@ class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftL)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7318,7 +7327,7 @@ class AstShiftR final : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftR)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7346,7 +7355,7 @@ public:
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::SIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftRS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -9048,7 +9057,7 @@ public:
         , m_cleanOut{cleanOut}
         , m_pure{true} {
         addNOp1p(new AstText(fl, textStmt, true));
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(CMath)
     virtual bool isGateOptimizable() const override { return m_pure; }
@@ -9180,7 +9189,7 @@ class AstTypeTable final : public AstNode {
     AstQueueDType* m_queueIndexp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
-    typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
+    using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
     DetailedMap m_detailedMap;
 
 public:

@@ -42,7 +42,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // TYPES
-    typedef std::multimap<string, AstCFunc*> FuncMmap;
+    using FuncMmap = std::multimap<std::string, AstCFunc*>;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -60,7 +60,7 @@ private:
         int instances = 0;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Scope)) {
-                if (++instances > 1) { return false; }
+                if (++instances > 1) return false;
             }
         }
         return (instances == 1);
