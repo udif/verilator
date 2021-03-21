@@ -1,0 +1,10 @@
+.Attention
+****
+This ``synthesis_off`` branch is a specialized branch that supports the ``// synthesis on`` and ``// synthesis off`` pragmas. +
+Wilson Snyder has explicitly refused supporting https://github.com/verilator/verilator/issues/24[this], his reasons being (correct to some degree)
+that this coding technique is totally broken, and should not be encoureged. +
+Nevertheless, when you need to support a large codebase using this, sometimes in 3rd party IP,
+some compromioses have to be made, hence this branch was created. +
+The intent is to follow the master branch and merge it to this branch from time to time.
+****
+
