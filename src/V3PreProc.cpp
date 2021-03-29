@@ -452,7 +452,7 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0 == (strncmp(cp, "pragma", strlen("pragma")))) {
         cp += strlen("pragma");
         synth = true;
-        vendor = Vendors::pragma; // yes, not really a vendor, but still.
+        vendor = Vendors::pragma;  // yes, not really a vendor, but still.
     } else if (0 == (strncmp(cp, "ambit synthesis", strlen("ambit synthesis")))) {
         cp += strlen("ambit synthesis");
         synth = true;
@@ -460,7 +460,7 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0 == (strncmp(cp, "synthesis", strlen("synthesis")))) {
         cp += strlen("synthesis");
         synth = true;
-        vendor = Vendors::synthesis; // yes, not a vendor
+        vendor = Vendors::synthesis;  // yes, not a vendor
     } else {
         return;
     }
