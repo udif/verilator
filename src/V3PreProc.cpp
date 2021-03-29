@@ -150,6 +150,8 @@ public:
         return states[s];
     }
 
+    enum class Vendors { none, synopsys, cadence, ambit, pragma, synthesis, Count };
+
     std::stack<ProcState> m_states;  ///< Current state of parser
     int m_off = 0;  ///< If non-zero, ifdef level is turned off, don't dump text
     bool m_incError = false;  ///< Include error found
@@ -406,6 +408,10 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 }
 
 void V3PreProcImp::comment(const string& text) {
+    Vendors vendor;
+    // by default vendor_off[] is all false, indicating all vendors are in 'translate on' state
+    static bool vendor_off[static_cast<int>(Vendors::Count)];
+
     // Comment detected.  Only keep relevant data.
     bool printed = false;
     if (v3Global.opt.preprocOnly() && v3Global.opt.ppComments()) {
@@ -434,6 +440,7 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0 == (strncmp(cp, "synopsys", strlen("synopsys")))) {
         cp += strlen("synopsys");
         synth = true;
+        vendor = Vendors::synopsys;
         if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*synopsys {...}*/ not /*synopsys_{...}*/");
@@ -441,15 +448,19 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0 == (strncmp(cp, "cadence", strlen("cadence")))) {
         cp += strlen("cadence");
         synth = true;
+        vendor = Vendors::cadence;
     } else if (0 == (strncmp(cp, "pragma", strlen("pragma")))) {
         cp += strlen("pragma");
         synth = true;
+        vendor = Vendors::pragma; // yes, not really a vendor, but still.
     } else if (0 == (strncmp(cp, "ambit synthesis", strlen("ambit synthesis")))) {
         cp += strlen("ambit synthesis");
         synth = true;
+        vendor = Vendors::ambit;
     } else if (0 == (strncmp(cp, "synthesis", strlen("synthesis")))) {
         cp += strlen("synthesis");
         synth = true;
+        vendor = Vendors::synthesis; // yes, not a vendor
     } else {
         return;
     }
@@ -462,20 +473,23 @@ void V3PreProcImp::comment(const string& text) {
 
     if (synth) {
         if (commentTokenMatch(cmd /*ref*/, "translate_off")) {
-            if (state() == ps_SYNTH_OFF) {
+            // is vendor already set?
+            if (vendor_off[static_cast<int>(vendor)] && (state() == ps_SYNTH_OFF)) {
                 v3warn(USERWARN, "Recursive '// synthesis translate_off' declaration");
             } else {
                 parsingOff();
                 statePush(ps_SYNTH_OFF);
+                vendor_off[static_cast<int>(vendor)] = true;
             }
         }
         if (commentTokenMatch(cmd /*ref*/, "translate_on")) {
-            if (state() != ps_SYNTH_OFF) {
+            if (!vendor_off[static_cast<int>(vendor)] && (state() != ps_SYNTH_OFF)) {
                 v3warn(USERWARN, "Recursive '// synthesis translate_on' without '// synthesis "
                                  "translate_off' declaration");
             } else {
                 parsingOn();
                 statePop();
+                vendor_off[static_cast<int>(vendor)] = false;
             }
         }
         if (v3Global.opt.assertOn()) {
