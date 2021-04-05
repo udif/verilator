@@ -1091,7 +1091,7 @@ private:
                 iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH);
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* constp = VN_CAST(nodep->ticksp(), Const);
-                if (!constp || constp->toSInt() < 1) {
+                if (!constp) {
                     nodep->v3error("$past tick value must be constant (IEEE 1800-2017 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else if (constp->toSInt() < 1) {
@@ -1821,6 +1821,7 @@ private:
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
             AstNode* underp = nodep->lhsp()->unlinkFrBack();
+            underp->dtypeFrom(nodep);
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -3879,7 +3880,7 @@ private:
                                 newp = new AstMul(argp->fileline(),
                                                   new AstConst(argp->fileline(),
                                                                AstConst::Unsized64(),
-                                                               llround(scale)),
+                                                               std::llround(scale)),
                                                   argp);
                             }
                             relinkHandle.relink(newp);
