@@ -1097,6 +1097,7 @@ public:
         iterateAndNextNull(nodep->fhsp());
         puts(")");
     }
+    virtual void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         puts(nodep->hiernameProtect());
@@ -1265,7 +1266,9 @@ public:
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
         iterateChildren(nodep);
-        nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        }
     }
 
     EmitCStmts() {
@@ -2734,7 +2737,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts("\"Verilated model didn't ");
     if (initial) puts("DC ");
     puts("converge\\n\"\n");
-    puts("\"- See DIDNOTCONVERGE in the Verilator manual\");\n");
+    puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
     puts("} else {\n");
     puts("__Vchange = " + protect("_change_request") + "(vlSymsp);\n");
     puts("}\n");
