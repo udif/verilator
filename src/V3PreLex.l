@@ -126,7 +126,7 @@ bom             [\357\273\277]
                           if (LEXP->m_protBytes > 0) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "multiple `pragma protected encoding sections");
                           }
-                          res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
+                          res = sscanf(yytext + strlen("encoding"), " = ( enctype = \"%15[A-Za-z0-9]\" , line_length = %d , bytes = %d )", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma protected encoding must have an \"enctype\" field");
                           LEXP->m_encType = !VL_STRCASECMP(enctype, "uuencode") ? Enctype::UUENCODE :
@@ -160,7 +160,7 @@ bom             [\357\273\277]
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
 <PRAGMAPRT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
-<PRAGMAPRT>"version="[^\n\r]*[\n\r] {
+<PRAGMAPRT>"version"{wsn}*"="{wsn}*[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
                           BEGIN(INITIAL);
