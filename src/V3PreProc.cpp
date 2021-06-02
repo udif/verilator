@@ -408,7 +408,8 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 }
 
 void V3PreProcImp::comment(const string& text) {
-    Vendors vendor;
+    Vendors vendor = Vendors::none;
+
     // by default vendor_off[] is all false, indicating all vendors are in 'translate on' state
     static bool vendor_off[static_cast<int>(Vendors::Count)];
 
